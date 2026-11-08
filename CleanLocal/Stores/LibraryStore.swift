@@ -55,6 +55,7 @@ final class LibraryStore {
     @ObservationIgnored private let access: LocationAccessManager
     @ObservationIgnored private let photos: PhotosLibraryService
     @ObservationIgnored private let settings: SettingsStore
+    @ObservationIgnored private let policy: ProtectedPathPolicy
     @ObservationIgnored private var scanTask: Task<Void, Never>?
     @ObservationIgnored private var activeScanID: UUID?
 
@@ -63,8 +64,10 @@ final class LibraryStore {
         scanner: MediaScannerService,
         bookmarks: BookmarkManager,
         photos: PhotosLibraryService,
-        settings: SettingsStore
+        settings: SettingsStore,
+        policy: ProtectedPathPolicy = .standard
     ) {
+        self.policy = policy
         self.persistence = persistence
         self.scanner = scanner
         self.bookmarks = bookmarks
@@ -165,7 +168,7 @@ final class LibraryStore {
 
     func addLocation(_ url: URL) throws {
         let path = url.standardizedFileURL.path
-        if ProtectedPathPolicy.standard.isProtected(path: path) {
+        if policy.isProtected(path: path) {
             throw CleanLocalError.protectedLocation(path: UserDirectories.abbreviate(path: path))
         }
         if locations.contains(where: { $0.path == path }) {
@@ -217,13 +220,17 @@ final class LibraryStore {
 
     // MARK: Scanning
 
-    func startScan() {
-        guard !isScanning else { return }
+    /// Starts a scan in the background. The returned task can be awaited (used by tests).
+    @discardableResult
+    func startScan() -> Task<Void, Never>? {
+        guard !isScanning else { return nil }
         guard hasSources else {
             presentedError = PresentableError(title: "Nothing to Scan", error: CleanLocalError.noLocationsToScan)
-            return
+            return nil
         }
-        scanTask = Task { [weak self] in await self?.performScan() }
+        let task = Task { [weak self] in _ = await self?.performScan() }
+        scanTask = task
+        return task
     }
 
     func cancelScan() {
@@ -250,7 +257,9 @@ final class LibraryStore {
         let startedAt = Date.now
 
         do {
-            let result = try await scanner.scan(roots: roots, previousItems: previous, configuration: settings.scanConfiguration) { [weak self] progress in
+            var configuration = settings.scanConfiguration
+            configuration.policy = policy
+            let result = try await scanner.scan(roots: roots, previousItems: previous, configuration: configuration) { [weak self] progress in
                 Task { @MainActor [weak self] in self?.applyProgress(progress, scanID: scanID) }
             }
 
