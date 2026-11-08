@@ -192,19 +192,24 @@ final class PhotosLibraryService: PhotosImageProviding, PhotosContentHashing, Ph
         }
     }
 
-    /// The asset's video for playback, when its original is available locally.
-    func videoAsset(forLocalIdentifier identifier: String) async -> AVAsset? {
-        guard let asset = asset(for: identifier), asset.mediaType == .video else { return nil }
+    /// A player for the asset's video, when its original is available locally.
+    @MainActor
+    func player(forLocalIdentifier identifier: String) async -> AVPlayer? {
+        guard let asset = await videoAsset(forLocalIdentifier: identifier).value else { return nil }
+        return AVPlayer(playerItem: AVPlayerItem(asset: asset))
+    }
+
+    private func videoAsset(forLocalIdentifier identifier: String) async -> UncheckedSendableBox<AVAsset?> {
+        guard let asset = asset(for: identifier), asset.mediaType == .video else { return UncheckedSendableBox(value: nil) }
         let options = PHVideoRequestOptions()
         options.isNetworkAccessAllowed = false
         options.deliveryMode = .highQualityFormat
-        let box: UncheckedSendableBox<AVAsset?> = await withCheckedContinuation { continuation in
+        return await withCheckedContinuation { continuation in
             imageManager.requestAVAsset(forVideo: asset, options: options) { avAsset, _, _ in
                 // AVAsset is documented as safe to load from any thread.
                 continuation.resume(returning: UncheckedSendableBox(value: avAsset))
             }
         }
-        return box.value
     }
 
     // MARK: - Hashing
