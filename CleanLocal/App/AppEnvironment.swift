@@ -78,5 +78,7 @@ extension View {
             .environment(\.thumbnailService, environment.thumbnails)
             .environment(\.photosService, environment.photos)
             .environment(\.storageService, environment.storage)
+            // Brand accent (Blaze Orange) for every control, regardless of the system accent.
+            .tint(Palette.accent)
     }
 }

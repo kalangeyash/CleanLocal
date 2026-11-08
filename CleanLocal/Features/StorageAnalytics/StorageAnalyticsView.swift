@@ -64,7 +64,7 @@ struct StorageAnalyticsView: View {
     private var figures: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: Spacing.l)], spacing: Spacing.l) {
             StatTile(title: "Scanned Media", value: library.breakdown.totalBytes.formattedBytes,
-                     caption: "\(library.breakdown.totalCount.formatted()) items indexed", symbol: "photo.stack.fill", tint: Palette.brandIndigo)
+                     caption: "\(library.breakdown.totalCount.formatted()) items indexed", symbol: "photo.stack.fill", tint: Palette.tangerine)
             StatTile(title: "Potentially Reclaimable", value: analysis.duplicatePhase == .notStarted ? "—" : analysis.reclaimableDuplicateBytes.formattedBytes,
                      caption: "Extra copies of exact duplicates", symbol: "leaf.fill", tint: Palette.success)
             StatTile(title: "Moved to Trash", value: deletion.totalReclaimedBytes.formattedBytes,
@@ -155,7 +155,7 @@ struct StorageAnalyticsView: View {
             ForEach(Array(folders)) { folder in
                 VStack(alignment: .leading, spacing: Spacing.xxs) {
                     HStack {
-                        Image(systemName: "folder.fill").foregroundStyle(Palette.brandIndigo)
+                        Image(systemName: "folder.fill").foregroundStyle(Palette.accent)
                         Text(UserDirectories.abbreviate(path: folder.path))
                             .lineLimit(1)
                             .truncationMode(.head)

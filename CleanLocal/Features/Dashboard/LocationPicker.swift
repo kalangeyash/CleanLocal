@@ -58,7 +58,7 @@ struct LocationQuickPicks: View {
                 } label: {
                     HStack(spacing: Spacing.s) {
                         Image(systemName: isAdded ? "checkmark.circle.fill" : suggestion.symbol)
-                            .foregroundStyle(isAdded ? Palette.success : Palette.brandIndigo)
+                            .foregroundStyle(isAdded ? Palette.ink : Palette.accent)
                             .frame(width: 20)
                         Text(suggestion.title).lineLimit(1)
                         Spacer(minLength: 0)

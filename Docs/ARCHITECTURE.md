@@ -71,6 +71,28 @@ Cancellation is cooperative throughout: `Task.isCancelled` is checked between di
 
 Writes are atomic. A corrupt file, or one with an incompatible schema version, is moved aside rather than deleted, and the app starts with empty state. Preferences are kept in `UserDefaults`.
 
+## Design system
+
+All colors come from the brand palette in `DesignSystem/Theme.swift` (`Palette`). Don't introduce other hex values; derive new tokens from these seven.
+
+| Token | Hex | Role |
+| --- | --- | --- |
+| `Palette.black` | `#000000` | Text on brand fills (`onBrand`), light-mode ink, dark-mode page |
+| `Palette.grey` | `#80807E` | "Other Media", neutral info, secondary data; dark-mode surfaces are derived from it |
+| `Palette.porcelain` | `#FFFFFC` | Light-mode cards, dark-mode ink, glyphs on dark overlays |
+| `Palette.khaki` | `#BEB7A4` | Screenshots, "keep" / success states; light-mode page tint, fills and strokes |
+| `Palette.tangerine` | `#FF7F11` | Photos, warnings, gradient start |
+| `Palette.blaze` | `#FF5F09` | Accent (selection, focus, controls; also the AccentColor asset) |
+| `Palette.flame` | `#FF3F00` | Videos, destructive actions, gradient end |
+
+Rules:
+
+- **Contrast.** Text and glyphs on any brand fill use `Palette.onBrand` (Black, 6–11 : 1). White on these oranges is only 2.5–3.5 : 1, which fails WCAG AA for body text. Orange text is reserved for large display type (`accentTextGradient`).
+- **Primary vs destructive.** Primary buttons are ink pills (Black in light mode, Porcelain in dark mode). Destructive buttons are Blazing Flame. The two never share a color.
+- **Categories:** Photos = Tangerine, Videos = Flame, Screenshots = Khaki, Other = Grey.
+- **Surfaces:** in light mode, the page is Porcelain warmed with 16 % Khaki and cards are Porcelain. In dark mode, the page is Black and cards are Black lifted with Grey.
+- **Controls:** the root view applies `.tint(Palette.accent)`, so native controls use Blaze Orange whatever the system accent color is.
+
 ## Adding a feature screen
 
 1. Create `Features/<Name>/<Name>View.swift`.

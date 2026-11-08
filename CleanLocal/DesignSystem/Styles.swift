@@ -12,7 +12,7 @@ struct CardModifier: ViewModifier {
             .background {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(Palette.cardBackground)
-                    .shadow(color: .black.opacity(0.05), radius: 10, y: 3)
+                    .shadow(color: Palette.black.opacity(0.05), radius: 10, y: 3)
             }
             .overlay {
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -47,7 +47,9 @@ struct HoverLiftModifier: ViewModifier {
 
 // MARK: - Buttons
 
-/// The brand-gradient call-to-action button ("Scan My Mac").
+/// The main call-to-action: an ink pill (Black on light, Porcelain on dark).
+///
+/// Kept neutral on purpose so it never looks like the orange destructive button.
 struct PrimaryButtonStyle: ButtonStyle {
     var size: ControlSize = .regular
 
@@ -64,17 +66,22 @@ struct PrimaryButtonStyle: ButtonStyle {
         var body: some View {
             configuration.label
                 .font(.system(size == .large ? .title3 : .body, design: .rounded, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Palette.inkInverse)
                 .padding(.horizontal, size == .large ? 26 : 16)
                 .padding(.vertical, size == .large ? 13 : 8)
-                .background {
-                    Capsule().fill(Palette.brandGradient)
-                        .brightness(isHovering ? 0.06 : 0)
+                .background { Capsule().fill(Palette.ink) }
+                .overlay(alignment: .bottom) {
+                    // Brand underline that grows on hover.
+                    Capsule()
+                        .fill(Palette.brandGradient)
+                        .frame(height: 3)
+                        .padding(.horizontal, isHovering ? 14 : 28)
+                        .opacity(isHovering && isEnabled ? 1 : 0)
+                        .offset(y: -3)
                 }
-                .overlay { Capsule().strokeBorder(.white.opacity(0.22)) }
-                .shadow(color: Palette.brandViolet.opacity(isEnabled ? 0.35 : 0), radius: configuration.isPressed ? 3 : 10, y: 4)
+                .shadow(color: .black.opacity(isEnabled ? 0.18 : 0), radius: configuration.isPressed ? 2 : 8, y: 3)
                 .scaleEffect(configuration.isPressed ? 0.97 : 1)
-                .opacity(isEnabled ? 1 : 0.45)
+                .opacity(isEnabled ? 1 : 0.4)
                 .animation(.cleanLocalHover, value: configuration.isPressed)
                 .animation(.cleanLocalHover, value: isHovering)
                 .onHover { isHovering = $0 }
@@ -83,27 +90,29 @@ struct PrimaryButtonStyle: ButtonStyle {
     }
 }
 
-/// A translucent secondary button that sits well on gradients and cards.
+/// A quiet secondary button for cards and for the orange hero.
 struct GlassButtonStyle: ButtonStyle {
     var onGradient = false
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(.body, design: .rounded, weight: .medium))
-            .foregroundStyle(onGradient ? Color.white : Color.primary)
+            .foregroundStyle(onGradient ? Palette.onBrand : Palette.ink)
             .padding(.horizontal, 14)
             .padding(.vertical, 7)
             .background(
-                Capsule().fill(onGradient ? Color.white.opacity(configuration.isPressed ? 0.3 : 0.2) : Palette.subtleFill)
+                Capsule().fill(onGradient
+                    ? AnyShapeStyle(Palette.black.opacity(configuration.isPressed ? 0.2 : 0.12))
+                    : AnyShapeStyle(configuration.isPressed ? Palette.strongFill : Palette.subtleFill))
             )
-            .overlay(Capsule().strokeBorder(onGradient ? Color.white.opacity(0.25) : Palette.cardStroke))
+            .overlay(Capsule().strokeBorder(onGradient ? Palette.black.opacity(0.18) : Palette.cardStroke))
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.cleanLocalHover, value: configuration.isPressed)
             .contentShape(Capsule())
     }
 }
 
-/// Destructive confirmation button.
+/// Destructive confirmation: Blazing Flame with black text (≈ 6 : 1 contrast).
 struct DestructiveButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         DestructiveBody(configuration: configuration)
@@ -116,10 +125,11 @@ struct DestructiveButtonStyle: ButtonStyle {
         var body: some View {
             configuration.label
                 .font(.system(.body, design: .rounded, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Palette.onBrand)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 8)
-                .background(Capsule().fill(Palette.destructive.gradient))
+                .background(Capsule().fill(Palette.destructive))
+                .overlay(Capsule().strokeBorder(Palette.black.opacity(0.12)))
                 .scaleEffect(configuration.isPressed ? 0.97 : 1)
                 .opacity(isEnabled ? 1 : 0.45)
                 .animation(.cleanLocalHover, value: configuration.isPressed)

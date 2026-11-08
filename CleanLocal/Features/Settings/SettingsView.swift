@@ -104,13 +104,13 @@ private struct LocationsSettingsPane: View {
                             .labelsHidden()
                             .help("Include in scans")
                         Image(systemName: location.isRemovableVolume ? "externaldrive.fill" : "folder.fill")
-                            .foregroundStyle(Palette.brandIndigo)
+                            .foregroundStyle(Palette.accent)
                         VStack(alignment: .leading, spacing: 1) {
                             Text(location.displayName)
                             Text(UserDirectories.abbreviate(path: location.path))
                                 .font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.head)
                             if case let .unavailable(reason) = library.locationStatuses[location.id] {
-                                Text(reason).font(.caption).foregroundStyle(Palette.warning)
+                                Label(reason, systemImage: "exclamationmark.triangle.fill").font(.caption).foregroundStyle(.secondary)
                             } else if let scanned = location.lastScannedAt {
                                 Text("Scanned \(scanned.relativeDisplay) · \(library.items(in: location.id).count) items")
                                     .font(.caption).foregroundStyle(.tertiary)
@@ -240,7 +240,7 @@ private struct DataSettingsPane: View {
                 ForEach(library.scanSessions.prefix(6)) { session in
                     HStack {
                         Image(systemName: session.wasCancelled ? "stop.circle" : "checkmark.circle")
-                            .foregroundStyle(session.wasCancelled ? Palette.warning : Palette.success)
+                            .foregroundStyle(session.wasCancelled ? Palette.blaze : Palette.ink)
                         Text(session.finishedAt.mediumDisplay)
                         Spacer()
                         Text(session.wasCancelled ? "Cancelled" : "\(session.mediaCount.formatted()) items · \(session.duration.formattedDuration)")
@@ -320,7 +320,7 @@ private struct PrivacySettingsPane: View {
 
     private func privacyRow(_ symbol: String, _ title: String, _ detail: String) -> some View {
         HStack(alignment: .top, spacing: Spacing.m) {
-            Image(systemName: symbol).foregroundStyle(Palette.brandTeal).frame(width: 24)
+            Image(systemName: symbol).foregroundStyle(Palette.accent).frame(width: 24)
             VStack(alignment: .leading, spacing: 2) {
                 Text(title).font(.callout.weight(.semibold))
                 Text(detail).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
@@ -336,7 +336,7 @@ private struct AboutPane: View {
             BrandMark(size: 96)
             VStack(spacing: Spacing.xs) {
                 Text(AppConstants.appName).font(.heroTitle)
-                Text(AppConstants.tagline).font(.title3).foregroundStyle(Palette.brandGradient)
+                Text(AppConstants.tagline).font(.title3.weight(.semibold)).foregroundStyle(Palette.accentTextGradient)
                 Text("Version \(AppConstants.version)").font(.callout).foregroundStyle(.secondary)
             }
             Text("A native macOS utility for finding and safely removing unneeded photos and videos. Built with SwiftUI, PhotoKit, AVFoundation, ImageIO and CryptoKit.")

@@ -58,9 +58,9 @@ private struct DeletionConfirmationView: View {
             HStack(alignment: .top, spacing: Spacing.l) {
                 Image(systemName: "trash.fill")
                     .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Palette.onBrand)
                     .frame(width: 48, height: 48)
-                    .background(Circle().fill(Palette.destructive.gradient))
+                    .background(Circle().fill(Palette.destructive))
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: Spacing.xxs) {
                     Text(title).font(.title3.weight(.semibold))
@@ -156,9 +156,9 @@ private struct DeletionResultView: View {
             HStack(alignment: .top, spacing: Spacing.l) {
                 Image(systemName: report.failures.isEmpty ? "checkmark" : "exclamationmark")
                     .font(.system(size: 22, weight: .bold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Palette.onBrand)
                     .frame(width: 48, height: 48)
-                    .background(Circle().fill((report.failures.isEmpty ? Palette.success : Palette.warning).gradient))
+                    .background(Circle().fill(report.failures.isEmpty ? Palette.success : Palette.warning))
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: Spacing.xxs) {
                     Text(headline).font(.title3.weight(.semibold))

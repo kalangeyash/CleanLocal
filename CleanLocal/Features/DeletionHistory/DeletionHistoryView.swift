@@ -30,9 +30,12 @@ struct DeletionHistoryView: View {
             } else {
                 Table(records, sortOrder: $sortOrder) {
                     TableColumn("Status") { record in
-                        Label(record.status.title, systemImage: symbol(for: record.status))
-                            .foregroundStyle(color(for: record.status))
-                            .labelStyle(.titleAndIcon)
+                        // Color on the icon only: brand tints are too light for small text.
+                        Label {
+                            Text(record.status.title)
+                        } icon: {
+                            Image(systemName: symbol(for: record.status)).foregroundStyle(color(for: record.status))
+                        }
                     }
                     .width(min: 130, ideal: 170)
                     TableColumn("Name", value: \.filename) { Text($0.filename).lineLimit(1).truncationMode(.middle) }
@@ -91,8 +94,8 @@ struct DeletionHistoryView: View {
 
     private func color(for status: DeletionRecord.Status) -> Color {
         switch status {
-        case .movedToTrash, .removedFromPhotos: Palette.success
-        case .failed: Palette.warning
+        case .movedToTrash, .removedFromPhotos: Palette.grey
+        case .failed: Palette.flame
         }
     }
 }

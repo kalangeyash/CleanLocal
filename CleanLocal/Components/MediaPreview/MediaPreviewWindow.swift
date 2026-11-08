@@ -19,7 +19,7 @@ struct MediaPreviewWindow: View {
                     symbol: "checkmark.circle",
                     title: "Item No Longer in Library",
                     message: "It was moved to the Trash or removed from its folder. Close this window to continue.",
-                    tint: Palette.success
+                    tint: Palette.accent
                 )
             }
         }
@@ -60,7 +60,7 @@ struct MediaPreviewView: View {
     @ViewBuilder
     private var canvas: some View {
         ZStack {
-            Palette.adaptive(light: NSColor(white: 0.93, alpha: 1), dark: NSColor(white: 0.07, alpha: 1))
+            Palette.canvas
             if item.kind == .video {
                 if let player {
                     VideoPlayer(player: player)
@@ -138,7 +138,7 @@ struct MediaInspector: View {
                         .fixedSize(horizontal: false, vertical: true)
                     HStack(spacing: Spacing.xs) {
                         Badge(text: item.category.title, symbol: item.category.symbolName, tint: item.category.tint)
-                        if item.isPhotosAsset { Badge(text: "Photos Library", tint: Palette.brandViolet) }
+                        if item.isPhotosAsset { Badge(text: "Photos Library", tint: Palette.grey) }
                     }
                 }
 

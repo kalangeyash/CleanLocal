@@ -185,7 +185,7 @@ struct MediaListView: View {
                         .frame(width: 30, height: 30)
                         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                     Text(item.filename).lineLimit(1).truncationMode(.middle)
-                    if item.isPhotosAsset { Badge(text: "Photos", tint: Palette.brandViolet) }
+                    if item.isPhotosAsset { Badge(text: "Photos", tint: Palette.grey) }
                     if item.isScreenshot { Badge(text: "Screenshot", tint: MediaCategory.screenshots.tint) }
                 }
             }

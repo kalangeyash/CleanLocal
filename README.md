@@ -72,6 +72,10 @@ To share the app with other Macs, archive it in Xcode (*Product › Archive*), s
 
 ---
 
+## Design
+
+CleanLocal uses a warm seven-color palette: Black `#000000`, Grey `#80807E`, Porcelain `#FFFFFC`, Khaki Beige `#BEB7A4`, Vivid Tangerine `#FF7F11`, Blaze Orange `#FF5F09` and Blazing Flame `#FF3F00`. It's applied consistently in light and dark mode, with WCAG AA contrast for text. See *Design system* in [Docs/ARCHITECTURE.md](Docs/ARCHITECTURE.md).
+
 ## Safety model
 
 CleanLocal is built so that it **can't** remove anything you didn't explicitly choose:

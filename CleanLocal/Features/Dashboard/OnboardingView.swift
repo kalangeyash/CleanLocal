@@ -14,7 +14,7 @@ struct OnboardingView: View {
                             .font(.heroTitle)
                         Text(AppConstants.tagline)
                             .font(.title3.weight(.medium))
-                            .foregroundStyle(Palette.brandGradient)
+                            .foregroundStyle(Palette.accentTextGradient)
                         Text("Find large, duplicate and forgotten photos and videos, then decide what goes. Nothing leaves your Mac, and nothing is removed without your say-so.")
                             .font(.body)
                             .foregroundStyle(.secondary)
@@ -25,9 +25,9 @@ struct OnboardingView: View {
                 .padding(.top, Spacing.xxxl)
 
                 HStack(spacing: Spacing.m) {
-                    featurePill("lock.shield.fill", "100% on-device", Palette.brandTeal)
-                    featurePill("hand.raised.fill", "Nothing deleted automatically", Palette.brandViolet)
-                    featurePill("bolt.fill", "Fast, incremental scans", Palette.warning)
+                    featurePill("lock.shield.fill", "100% on-device", Palette.tangerine)
+                    featurePill("hand.raised.fill", "Nothing deleted automatically", Palette.blaze)
+                    featurePill("bolt.fill", "Fast, incremental scans", Palette.flame)
                 }
 
                 VStack(alignment: .leading, spacing: Spacing.l) {

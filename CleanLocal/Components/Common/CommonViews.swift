@@ -36,10 +36,10 @@ struct EmptyStateView<Actions: View>: View {
     let symbol: String
     let title: String
     let message: String
-    var tint: Color = Palette.brandIndigo
+    var tint: Color = Palette.accent
     @ViewBuilder var actions: () -> Actions
 
-    init(symbol: String, title: String, message: String, tint: Color = Palette.brandIndigo,
+    init(symbol: String, title: String, message: String, tint: Color = Palette.accent,
          @ViewBuilder actions: @escaping () -> Actions = { EmptyView() }) {
         self.symbol = symbol
         self.title = title
@@ -84,7 +84,7 @@ struct StatTile: View {
     let value: String
     var caption: String?
     let symbol: String
-    var tint: Color = Palette.brandIndigo
+    var tint: Color = Palette.accent
     var action: (() -> Void)?
 
     var body: some View {
@@ -92,7 +92,7 @@ struct StatTile: View {
             HStack {
                 Image(systemName: symbol)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Palette.onBrand)
                     .frame(width: 32, height: 32)
                     .background(RoundedRectangle(cornerRadius: 9, style: .continuous).fill(tint.gradient))
                 Spacer()
@@ -150,10 +150,19 @@ struct InfoBanner: View {
 
         var tint: Color {
             switch self {
-            case .info: Palette.brandIndigo
+            case .info: Palette.grey
             case .warning: Palette.warning
-            case .privacy: Palette.brandTeal
+            case .privacy: Palette.khaki
             case .success: Palette.success
+            }
+        }
+
+        /// Khaki is too faint for a small icon on Porcelain, so those styles use ink.
+        var iconColor: Color {
+            switch self {
+            case .info: Palette.grey
+            case .warning: Palette.blaze
+            case .privacy, .success: Palette.ink
             }
         }
     }
@@ -166,7 +175,7 @@ struct InfoBanner: View {
         HStack(alignment: .top, spacing: Spacing.m) {
             Image(systemName: style.symbol)
                 .font(.system(size: 16))
-                .foregroundStyle(style.tint)
+                .foregroundStyle(style.iconColor)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 if let title { Text(title).font(.callout.weight(.semibold)) }
@@ -178,8 +187,8 @@ struct InfoBanner: View {
             Spacer(minLength: 0)
         }
         .padding(Spacing.m)
-        .background(RoundedRectangle(cornerRadius: Radius.medium, style: .continuous).fill(style.tint.opacity(0.09)))
-        .overlay(RoundedRectangle(cornerRadius: Radius.medium, style: .continuous).strokeBorder(style.tint.opacity(0.18)))
+        .background(RoundedRectangle(cornerRadius: Radius.medium, style: .continuous).fill(style.tint.opacity(0.14)))
+        .overlay(RoundedRectangle(cornerRadius: Radius.medium, style: .continuous).strokeBorder(style.tint.opacity(0.35)))
         .accessibilityElement(children: .combine)
     }
 }
@@ -211,7 +220,7 @@ struct Chip: View {
         Button(action: action) {
             Text(title)
                 .font(.callout.weight(isSelected ? .semibold : .medium))
-                .foregroundStyle(isSelected ? Color.white : Color.primary)
+                .foregroundStyle(isSelected ? Palette.onBrand : Palette.ink)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background {
@@ -230,7 +239,7 @@ struct Chip: View {
 struct Badge: View {
     let text: String
     var symbol: String?
-    var tint: Color = Palette.brandIndigo
+    var tint: Color = Palette.accent
 
     var body: some View {
         HStack(spacing: 3) {
@@ -238,10 +247,10 @@ struct Badge: View {
             Text(text)
         }
         .font(.caption2.weight(.bold))
-        .foregroundStyle(tint)
+        .foregroundStyle(Palette.onBrand)
         .padding(.horizontal, 6)
         .padding(.vertical, 2)
-        .background(Capsule().fill(tint.opacity(0.14)))
+        .background(Capsule().fill(tint))
     }
 }
 

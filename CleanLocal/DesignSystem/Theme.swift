@@ -20,51 +20,97 @@ enum Radius {
     static let xlarge: CGFloat = 22
 }
 
-/// Brand and semantic colors. Every color adapts to light and dark appearance.
+/// CleanLocal's color system.
+///
+/// The seven brand colors below are the single source of truth; every other color in the
+/// app is derived from them. Contrast rule: text and glyphs drawn on any brand fill use
+/// ``onBrand`` (black), which keeps every combination at WCAG AA or better
+/// (white on these oranges would be only 2.5–3.5 : 1).
 enum Palette {
-    static let brandIndigo = Color(red: 0.35, green: 0.40, blue: 0.98)
-    static let brandViolet = Color(red: 0.60, green: 0.36, blue: 0.97)
-    static let brandTeal = Color(red: 0.18, green: 0.74, blue: 0.86)
+    // MARK: Brand palette
+
+    static let black = Color(hex: 0x000000)
+    static let grey = Color(hex: 0x80807E)
+    static let porcelain = Color(hex: 0xFFFFFC)
+    static let khaki = Color(hex: 0xBEB7A4)
+    static let tangerine = Color(hex: 0xFF7F11)
+    static let blaze = Color(hex: 0xFF5F09)
+    static let flame = Color(hex: 0xFF3F00)
+
+    // MARK: Semantic roles
+
+    /// Selection, focus rings and interactive highlights (mirrors the AccentColor asset).
+    static let accent = blaze
+    /// Text and glyphs placed on any brand-colored fill.
+    static let onBrand = black
+    /// High-emphasis foreground: Black in light mode, Porcelain in dark mode.
+    static let ink = adaptive(light: .black, dark: nsColor(0xFFFFFC))
+    /// The opposite of ``ink``, for text on ``ink`` fills.
+    static let inkInverse = adaptive(light: nsColor(0xFFFFFC), dark: .black)
+
+    static let destructive = flame
+    static let warning = tangerine
+    /// "Keep" / completed states. Always paired with ``onBrand`` content.
+    static let success = khaki
+    static let neutral = grey
 
     static let brandGradient = LinearGradient(
-        colors: [brandIndigo, brandViolet, brandTeal],
+        colors: [tangerine, blaze, flame],
         startPoint: .topLeading, endPoint: .bottomTrailing
     )
-
     static let heroGradient = LinearGradient(
-        colors: [brandIndigo.opacity(0.95), brandViolet.opacity(0.9), Color(red: 0.86, green: 0.38, blue: 0.78).opacity(0.85)],
+        colors: [tangerine, blaze, flame],
         startPoint: .topLeading, endPoint: .bottomTrailing
     )
+    /// For large display text only (Blaze → Flame keeps ≥ 3 : 1 on Porcelain).
+    static let accentTextGradient = LinearGradient(colors: [blaze, flame], startPoint: .leading, endPoint: .trailing)
 
-    static let destructive = Color(red: 0.95, green: 0.27, blue: 0.30)
-    static let warning = Color(red: 0.98, green: 0.62, blue: 0.13)
-    static let success = Color(red: 0.20, green: 0.75, blue: 0.45)
+    // MARK: Surfaces
 
-    static let pageBackground = adaptive(light: NSColor(white: 0.965, alpha: 1), dark: NSColor(white: 0.11, alpha: 1))
-    static let cardBackground = adaptive(light: .white, dark: NSColor(white: 0.165, alpha: 1))
-    static let cardStroke = adaptive(light: NSColor(white: 0, alpha: 0.07), dark: NSColor(white: 1, alpha: 0.08))
-    static let subtleFill = adaptive(light: NSColor(white: 0, alpha: 0.045), dark: NSColor(white: 1, alpha: 0.07))
-    static let strongFill = adaptive(light: NSColor(white: 0, alpha: 0.08), dark: NSColor(white: 1, alpha: 0.12))
+    /// Porcelain warmed with 16 % Khaki in light mode; pure Black in dark mode.
+    static let pageBackground = adaptive(light: nsColor(0xF5F4EE), dark: .black)
+    /// Porcelain in light mode; Black lifted with 17 % Grey in dark mode.
+    static let cardBackground = adaptive(light: nsColor(0xFFFFFC), dark: nsColor(0x161615))
+    static let cardStroke = adaptive(light: nsColor(0xBEB7A4, alpha: 0.45), dark: nsColor(0x80807E, alpha: 0.28))
+    static let subtleFill = adaptive(light: nsColor(0xBEB7A4, alpha: 0.18), dark: nsColor(0x80807E, alpha: 0.18))
+    static let strongFill = adaptive(light: nsColor(0xBEB7A4, alpha: 0.34), dark: nsColor(0x80807E, alpha: 0.30))
+    /// Backdrop behind previewed media.
+    static let canvas = adaptive(light: nsColor(0xECE9E0), dark: .black)
 
     static func adaptive(light: NSColor, dark: NSColor) -> Color {
         Color(nsColor: NSColor(name: nil) { appearance in
             appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
         })
     }
+
+    static func nsColor(_ hex: UInt32, alpha: CGFloat = 1) -> NSColor {
+        NSColor(
+            srgbRed: CGFloat((hex >> 16) & 0xFF) / 255,
+            green: CGFloat((hex >> 8) & 0xFF) / 255,
+            blue: CGFloat(hex & 0xFF) / 255,
+            alpha: alpha
+        )
+    }
+}
+
+extension Color {
+    init(hex: UInt32) {
+        self.init(nsColor: Palette.nsColor(hex))
+    }
 }
 
 extension MediaCategory {
     var tint: Color {
         switch self {
-        case .photos: Color(red: 0.24, green: 0.52, blue: 0.98)
-        case .videos: Color(red: 0.64, green: 0.38, blue: 0.96)
-        case .screenshots: Color(red: 0.10, green: 0.71, blue: 0.69)
-        case .other: Color(red: 0.98, green: 0.58, blue: 0.20)
+        case .photos: Palette.tangerine
+        case .videos: Palette.flame
+        case .screenshots: Palette.khaki
+        case .other: Palette.grey
         }
     }
 
     var gradient: LinearGradient {
-        LinearGradient(colors: [tint, tint.opacity(0.7)], startPoint: .topLeading, endPoint: .bottomTrailing)
+        LinearGradient(colors: [tint, tint.opacity(0.78)], startPoint: .topLeading, endPoint: .bottomTrailing)
     }
 }
 

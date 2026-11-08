@@ -71,16 +71,16 @@ private struct DashboardContent: View {
         return LazyVGrid(columns: statColumns, spacing: Spacing.l) {
             StatTile(title: "Total Media", value: breakdown.totalCount.formatted(),
                      caption: "\(library.locations.count) \(library.locations.count == 1 ? "folder" : "folders")\(library.includesPhotosLibrary ? " + Photos" : "")",
-                     symbol: "photo.on.rectangle.angled", tint: Palette.brandIndigo) { navigation.destination = .allMedia }
+                     symbol: "photo.on.rectangle.angled", tint: Palette.tangerine) { navigation.destination = .allMedia }
             StatTile(title: "Media Storage", value: breakdown.totalBytes.formattedBytes,
-                     caption: "Scanned media size", symbol: "internaldrive.fill", tint: Palette.brandViolet) { navigation.destination = .storage }
+                     caption: "Scanned media size", symbol: "internaldrive.fill", tint: Palette.blaze) { navigation.destination = .storage }
             StatTile(title: "Photos", value: breakdown.photoCount.formatted(),
                      caption: "Including screenshots", symbol: "photo.fill", tint: MediaCategory.photos.tint) { navigation.destination = .allMedia }
             StatTile(title: "Videos", value: breakdown.videoCount.formatted(),
                      caption: breakdown.entry(for: .videos).bytes.formattedBytes, symbol: "film.fill", tint: MediaCategory.videos.tint) { navigation.destination = .videos }
             StatTile(title: "Duplicate Files", value: duplicatesAnalyzed ? analysis.redundantCopyCount.formatted() : "—",
                      caption: duplicatesAnalyzed ? "\(analysis.duplicateGroups.count) groups of identical files" : "Not analyzed yet",
-                     symbol: "square.on.square.fill", tint: Palette.warning) { navigation.destination = .duplicates }
+                     symbol: "square.on.square.fill", tint: Palette.blaze) { navigation.destination = .duplicates }
             StatTile(title: "Large Files", value: large.count.formatted(),
                      caption: "Over \(settings.largeFileThresholdMB) MB · \(StorageAnalyticsService.totalSize(of: large).formattedBytes)",
                      symbol: "externaldrive.fill", tint: Palette.destructive) { navigation.destination = .largeFiles }
@@ -146,11 +146,11 @@ private struct DashboardContent: View {
                 QuickActionCard(title: "Review Duplicates", detail: analysis.duplicateGroups.isEmpty ? "Find byte-identical copies" : "\(analysis.reclaimableDuplicateBytes.formattedBytes) in extra copies",
                                 symbol: "square.on.square.fill", tint: Palette.warning) { navigation.destination = .duplicates }
                 QuickActionCard(title: "Similar Photos", detail: analysis.similarGroups.isEmpty ? "Bursts, edits and near-copies" : "\(analysis.similarGroups.count) groups to review",
-                                symbol: "rectangle.stack.fill", tint: Palette.brandViolet) { navigation.destination = .similar }
+                                symbol: "rectangle.stack.fill", tint: Palette.blaze) { navigation.destination = .similar }
                 QuickActionCard(title: "Clean Up Screenshots", detail: "\(screenshots.count.formatted()) screenshots · \(screenshots.bytes.formattedBytes)",
                                 symbol: "camera.viewfinder", tint: MediaCategory.screenshots.tint) { navigation.destination = .screenshots }
                 QuickActionCard(title: "Old Media", detail: "\(old.count.formatted()) items older than \(settings.oldMediaThreshold.title)",
-                                symbol: "clock.arrow.circlepath", tint: Palette.brandIndigo) { navigation.destination = .oldMedia }
+                                symbol: "clock.arrow.circlepath", tint: Palette.grey) { navigation.destination = .oldMedia }
             }
         }
     }
@@ -179,12 +179,12 @@ struct DashboardHero: View {
             RoundedRectangle(cornerRadius: Radius.xlarge, style: .continuous)
                 .fill(Palette.heroGradient)
                 .overlay(alignment: .topTrailing) {
-                    Circle().fill(.white.opacity(0.10)).frame(width: 260).offset(x: 80, y: -120)
+                    Circle().fill(Palette.porcelain.opacity(0.16)).frame(width: 260).offset(x: 80, y: -120)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: Radius.xlarge, style: .continuous))
-                .shadow(color: Palette.brandViolet.opacity(0.3), radius: 20, y: 10)
+                .shadow(color: Palette.flame.opacity(0.28), radius: 20, y: 10)
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(Palette.onBrand)
         .animation(.cleanLocalSpring, value: library.isScanning)
     }
 
@@ -194,7 +194,7 @@ struct DashboardHero: View {
             .font(.heroTitle)
         Text(subtitle)
             .font(.callout)
-            .foregroundStyle(.white.opacity(0.85))
+            .foregroundStyle(Palette.black.opacity(0.72))
         HStack(spacing: Spacing.m) {
             Button {
                 library.startScan()
@@ -205,8 +205,8 @@ struct DashboardHero: View {
             .keyboardShortcut("r", modifiers: .command)
             if case let .running(progress, message) = analysis.duplicatePhase {
                 HStack(spacing: Spacing.s) {
-                    ProgressView(value: progress).progressViewStyle(.circular).controlSize(.small).tint(.white)
-                    Text(message).font(.caption).foregroundStyle(.white.opacity(0.85))
+                    ProgressView(value: progress).progressViewStyle(.circular).controlSize(.small).tint(Palette.black)
+                    Text(message).font(.caption).foregroundStyle(Palette.black.opacity(0.72))
                 }
             }
         }
@@ -232,12 +232,12 @@ struct DashboardHero: View {
                 ProgressView().progressViewStyle(.linear)
             }
         }
-        .tint(.white)
+        .tint(Palette.black)
         .frame(maxWidth: 420)
         HStack {
             Text(progress.currentLocationName.isEmpty ? progress.currentPath : "\(progress.currentLocationName) · \(progress.currentPath)")
                 .font(.caption.monospaced())
-                .foregroundStyle(.white.opacity(0.8))
+                .foregroundStyle(Palette.black.opacity(0.68))
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .frame(maxWidth: 420, alignment: .leading)
@@ -252,7 +252,7 @@ struct DashboardHero: View {
             Text(value)
                 .font(.system(.title3, design: .rounded, weight: .semibold).monospacedDigit())
                 .contentTransition(.numericText())
-            Text(label).font(.caption).foregroundStyle(.white.opacity(0.8))
+            Text(label).font(.caption).foregroundStyle(Palette.black.opacity(0.68))
         }
     }
 
@@ -270,11 +270,11 @@ struct DashboardHero: View {
         ZStack {
             Image(systemName: "photo.stack.fill")
                 .font(.system(size: 86, weight: .light))
-                .foregroundStyle(.white.opacity(0.22))
+                .foregroundStyle(Palette.black.opacity(0.14))
                 .rotationEffect(.degrees(-8))
             Image(systemName: "sparkles")
                 .font(.system(size: 34, weight: .medium))
-                .foregroundStyle(.white.opacity(0.75))
+                .foregroundStyle(Palette.porcelain.opacity(0.92))
                 .offset(x: 52, y: -44)
                 .symbolEffect(.pulse, isActive: library.isScanning)
         }
@@ -288,10 +288,10 @@ struct HeroButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(.title3, design: .rounded, weight: .semibold))
-            .foregroundStyle(Palette.brandIndigo)
+            .foregroundStyle(Palette.porcelain)
             .padding(.horizontal, 22)
             .padding(.vertical, 11)
-            .background(Capsule().fill(.white))
+            .background(Capsule().fill(Palette.black))
             .shadow(color: .black.opacity(0.15), radius: configuration.isPressed ? 2 : 8, y: 3)
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .animation(.cleanLocalHover, value: configuration.isPressed)
@@ -310,9 +310,9 @@ struct QuickActionCard: View {
             HStack(spacing: Spacing.m) {
                 Image(systemName: symbol)
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(tint)
+                    .foregroundStyle(Palette.onBrand)
                     .frame(width: 42, height: 42)
-                    .background(RoundedRectangle(cornerRadius: 11, style: .continuous).fill(tint.opacity(0.13)))
+                    .background(RoundedRectangle(cornerRadius: 11, style: .continuous).fill(tint.gradient))
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).font(.headline)
                     Text(detail).font(.callout).foregroundStyle(.secondary).lineLimit(1)
@@ -350,7 +350,7 @@ struct LocationsSummaryCard: View {
             ForEach(library.locations.prefix(5)) { location in
                 HStack(spacing: Spacing.s) {
                     Image(systemName: location.isRemovableVolume ? "externaldrive.fill" : "folder.fill")
-                        .foregroundStyle(Palette.brandIndigo)
+                        .foregroundStyle(Palette.accent)
                     VStack(alignment: .leading, spacing: 0) {
                         Text(location.displayName).lineLimit(1)
                         Text(UserDirectories.abbreviate(path: location.path))
