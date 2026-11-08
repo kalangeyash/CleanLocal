@@ -271,7 +271,7 @@ struct SelectionActionBar: View {
                 Label("Move to Trash…", systemImage: "trash")
             }
             .buttonStyle(.destructive)
-            .keyboardShortcut(.delete, modifiers: .command)
+            .help("Move to Trash… (⌘⌫)")
         }
         .padding(.leading, Spacing.l)
         .padding(.trailing, Spacing.s)

@@ -70,7 +70,7 @@ private struct DashboardContent: View {
         let duplicatesAnalyzed: Bool = if case .completed = analysis.duplicatePhase { true } else { false }
         return LazyVGrid(columns: statColumns, spacing: Spacing.l) {
             StatTile(title: "Total Media", value: breakdown.totalCount.formatted(),
-                     caption: "\(library.locations.count) folders\(library.includesPhotosLibrary ? " + Photos" : "")",
+                     caption: "\(library.locations.count) \(library.locations.count == 1 ? "folder" : "folders")\(library.includesPhotosLibrary ? " + Photos" : "")",
                      symbol: "photo.on.rectangle.angled", tint: Palette.brandIndigo) { navigation.destination = .allMedia }
             StatTile(title: "Media Storage", value: breakdown.totalBytes.formattedBytes,
                      caption: "Scanned media size", symbol: "internaldrive.fill", tint: Palette.brandViolet) { navigation.destination = .storage }

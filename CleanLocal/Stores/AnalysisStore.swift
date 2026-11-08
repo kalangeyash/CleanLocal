@@ -43,7 +43,8 @@ final class AnalysisStore {
 
     // MARK: Exact duplicates
 
-    func analyzeDuplicates() {
+    @discardableResult
+    func analyzeDuplicates() -> Task<Void, Never>? {
         duplicateTask?.cancel()
         let items = library.items
         let service = duplicateService
@@ -62,11 +63,13 @@ final class AnalysisStore {
                 unreadableDuplicateCandidates = result.unreadableCount
                 duplicatePhase = .completed(.now)
             } catch is CancellationError {
-                self?.duplicatePhase = .notStarted
+                // Superseded or stopped: whoever cancelled owns the phase now.
             } catch {
+                guard !Task.isCancelled else { return }
                 self?.duplicatePhase = .failed(error.localizedDescription)
             }
         }
+        return duplicateTask
     }
 
     func cancelDuplicateAnalysis() {
@@ -82,7 +85,8 @@ final class AnalysisStore {
 
     // MARK: Similar photos
 
-    func analyzeSimilar() {
+    @discardableResult
+    func analyzeSimilar() -> Task<Void, Never>? {
         similarTask?.cancel()
         let images = library.items.filter { $0.kind == .image }
         let service = similarityService
@@ -107,11 +111,13 @@ final class AnalysisStore {
                 similarGroups = groups
                 similarPhase = .completed(.now)
             } catch is CancellationError {
-                self?.similarPhase = .notStarted
+                // Superseded or stopped: whoever cancelled owns the phase now.
             } catch {
+                guard !Task.isCancelled else { return }
                 self?.similarPhase = .failed(error.localizedDescription)
             }
         }
+        return similarTask
     }
 
     func cancelSimilarAnalysis() {
@@ -144,7 +150,7 @@ final class AnalysisStore {
         similarPhase = .notStarted
     }
 
-    static func prune(
+    nonisolated static func prune(
         _ groups: [DuplicateGroup],
         removing ids: Set<MediaItem.ID>,
         keeperRule: ([MediaItem]) -> MediaItem.ID
