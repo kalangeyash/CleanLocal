@@ -3,7 +3,8 @@ import Foundation
 extension Int64 {
     /// File-style byte count, e.g. "1.2 GB".
     var formattedBytes: String {
-        formatted(.byteCount(style: .file))
+        // The system style renders zero as "Zero KB", which reads oddly in tables and charts.
+        self == 0 ? "0 KB" : formatted(.byteCount(style: .file))
     }
 }
 

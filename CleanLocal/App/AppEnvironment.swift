@@ -13,7 +13,11 @@ final class AppEnvironment {
     let storage: StorageAnalyticsService
     let persistence: PersistenceController
 
-    init(persistence: PersistenceController = .live(), defaults: UserDefaults = .standard) {
+    init(
+        persistence: PersistenceController = .live(),
+        defaults: UserDefaults = .standard,
+        policy: ProtectedPathPolicy = .standard
+    ) {
         self.persistence = persistence
         let photos = PhotosLibraryService()
         self.photos = photos
@@ -27,7 +31,8 @@ final class AppEnvironment {
             scanner: MediaScannerService(),
             bookmarks: BookmarkManager(),
             photos: photos,
-            settings: settings
+            settings: settings,
+            policy: policy
         )
         analysis = AnalysisStore(
             library: library,
@@ -36,7 +41,7 @@ final class AppEnvironment {
             similarityService: SimilarityDetectionService(photosHasher: photos)
         )
         deletion = DeletionStore(
-            service: SafeDeletionService(photosDeleter: photos),
+            service: SafeDeletionService(photosDeleter: photos, policy: policy),
             library: library,
             analysis: analysis,
             persistence: persistence

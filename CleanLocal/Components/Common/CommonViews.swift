@@ -111,12 +111,12 @@ struct StatTile: View {
                 Text(title)
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
-                if let caption {
-                    Text(caption)
-                        .font(.caption)
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
-                }
+                // Always reserve the caption line so tiles in a row share one height.
+                Text(caption ?? " ")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .lineLimit(1)
+                    .accessibilityHidden(caption == nil)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
