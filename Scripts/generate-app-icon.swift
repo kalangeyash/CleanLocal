@@ -9,6 +9,17 @@ func color(_ r: CGFloat, _ g: CGFloat, _ b: CGFloat) -> NSColor {
     NSColor(srgbRed: r, green: g, blue: b, alpha: 1)
 }
 
+func hex(_ value: UInt32) -> NSColor {
+    color(CGFloat((value >> 16) & 0xFF) / 255, CGFloat((value >> 8) & 0xFF) / 255, CGFloat(value & 0xFF) / 255)
+}
+
+// CleanLocal brand palette.
+let porcelain = hex(0xFFFFFC)
+let tangerine = hex(0xFF7F11)
+let blaze = hex(0xFF5F09)
+let flame = hex(0xFF3F00)
+let black = hex(0x000000)
+
 func renderIcon(pixels: Int) -> Data? {
     guard let rep = NSBitmapImageRep(
         bitmapDataPlanes: nil, pixelsWide: pixels, pixelsHigh: pixels, bitsPerSample: 8,
@@ -32,14 +43,14 @@ func renderIcon(pixels: Int) -> Data? {
     shadow.shadowBlurRadius = 28
     shadow.shadowOffset = NSSize(width: 0, height: -12)
     shadow.set()
-    color(0.36, 0.40, 0.98).setFill()
+    blaze.setFill()
     shape.fill()
     NSGraphicsContext.restoreGraphicsState()
 
     // Brand gradient.
     NSGraphicsContext.saveGraphicsState()
     shape.addClip()
-    NSGradient(colors: [color(0.33, 0.42, 0.99), color(0.60, 0.36, 0.97), color(0.86, 0.38, 0.80)])?
+    NSGradient(colors: [tangerine, blaze, flame])?
         .draw(in: body, angle: -55)
     // Soft glows that fade fully to transparent (no visible edges).
     if let cg = NSGraphicsContext.current?.cgContext {
@@ -48,14 +59,14 @@ func renderIcon(pixels: Int) -> Data? {
             guard let gradient = CGGradient(colorsSpace: CGColorSpace(name: CGColorSpace.sRGB), colors: colors, locations: [0, 1]) else { return }
             cg.drawRadialGradient(gradient, startCenter: center, startRadius: 0, endCenter: center, endRadius: radius, options: [])
         }
-        glow(center: CGPoint(x: 820, y: 860), radius: 420, color: NSColor.white.withAlphaComponent(0.28))
-        glow(center: CGPoint(x: 170, y: 150), radius: 460, color: color(0.18, 0.82, 0.92).withAlphaComponent(0.55))
+        glow(center: CGPoint(x: 820, y: 860), radius: 440, color: porcelain.withAlphaComponent(0.30))
+        glow(center: CGPoint(x: 170, y: 150), radius: 460, color: flame.withAlphaComponent(0.55))
     }
     NSGraphicsContext.restoreGraphicsState()
 
     // Glyph: stacked photos with sparkles (SF Symbol, white).
     let configuration = NSImage.SymbolConfiguration(pointSize: 420, weight: .semibold)
-        .applying(NSImage.SymbolConfiguration(paletteColors: [color(0.55, 0.36, 0.96), .white]))
+        .applying(NSImage.SymbolConfiguration(paletteColors: [flame, porcelain]))
     if let symbol = NSImage(systemSymbolName: "sparkles.rectangle.stack.fill", accessibilityDescription: nil)?
         .withSymbolConfiguration(configuration) {
         let size = symbol.size
@@ -64,7 +75,7 @@ func renderIcon(pixels: Int) -> Data? {
                             width: size.width * scale, height: size.height * scale)
         NSGraphicsContext.saveGraphicsState()
         let glyphShadow = NSShadow()
-        glyphShadow.shadowColor = NSColor(srgbRed: 0.2, green: 0.1, blue: 0.5, alpha: 0.35)
+        glyphShadow.shadowColor = black.withAlphaComponent(0.28)
         glyphShadow.shadowBlurRadius = 18
         glyphShadow.shadowOffset = NSSize(width: 0, height: -8)
         glyphShadow.set()
@@ -73,7 +84,7 @@ func renderIcon(pixels: Int) -> Data? {
     }
 
     // Subtle inner edge.
-    NSColor.white.withAlphaComponent(0.18).setStroke()
+    porcelain.withAlphaComponent(0.22).setStroke()
     shape.lineWidth = 3
     shape.stroke()
 

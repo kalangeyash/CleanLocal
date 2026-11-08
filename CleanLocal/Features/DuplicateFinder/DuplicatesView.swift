@@ -97,7 +97,7 @@ struct DuplicatesView: View {
                 message: analysis.unreadableDuplicateCandidates > 0
                     ? "\(analysis.unreadableDuplicateCandidates) candidates couldn’t be read (for example, originals stored only in iCloud)."
                     : "Every scanned file is unique.",
-                tint: Palette.success
+                tint: Palette.accent
             )
         default:
             ScrollView {
@@ -136,9 +136,12 @@ struct DuplicateGroupCard: View {
                 }
                 Spacer()
                 if allSelected {
-                    Label("Every copy selected", systemImage: "exclamationmark.triangle.fill")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(Palette.warning)
+                    Label {
+                        Text("Every copy selected").foregroundStyle(Palette.ink)
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Palette.blaze)
+                    }
+                    .font(.caption.weight(.semibold))
                 }
                 Button("Keep Suggested") {
                     let others = group.items.filter { $0.id != group.suggestedKeeperID }.map(\.id)
@@ -195,7 +198,7 @@ private struct DuplicateRow: View {
                 HStack(spacing: Spacing.xs) {
                     Text(item.filename).font(.callout.weight(.medium)).lineLimit(1).truncationMode(.middle)
                     if isKeeper { Badge(text: "Suggested Keep", symbol: "star.fill", tint: Palette.success) }
-                    if item.isPhotosAsset { Badge(text: "Photos", tint: Palette.brandViolet) }
+                    if item.isPhotosAsset { Badge(text: "Photos", tint: Palette.grey) }
                 }
                 Text(item.locationDescription)
                     .font(.caption)
@@ -224,7 +227,7 @@ private struct DuplicateRow: View {
         }
         .padding(.horizontal, Spacing.m)
         .padding(.vertical, Spacing.s)
-        .background(isSelected ? Color.accentColor.opacity(0.08) : .clear)
+        .background(isSelected ? Palette.accent.opacity(0.08) : .clear)
         .contentShape(Rectangle())
         .onTapGesture(perform: toggle)
         .onHover { isHovering = $0 }

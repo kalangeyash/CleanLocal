@@ -70,10 +70,10 @@ struct BrandMark: View {
             .overlay {
                 Image(systemName: "sparkles.rectangle.stack.fill")
                     .font(.system(size: size * 0.5, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .shadow(color: .black.opacity(0.15), radius: 1, y: 1)
+                    .foregroundStyle(Palette.porcelain)
+                    .shadow(color: Palette.black.opacity(0.2), radius: 1, y: 1)
             }
-            .shadow(color: Palette.brandViolet.opacity(0.35), radius: size * 0.18, y: size * 0.08)
+            .shadow(color: Palette.flame.opacity(0.32), radius: size * 0.18, y: size * 0.08)
             .accessibilityHidden(true)
     }
 }

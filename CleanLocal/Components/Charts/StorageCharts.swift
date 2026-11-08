@@ -127,7 +127,7 @@ struct CapacityBar: View {
                 let other = max(Double(volume.usedBytes) - media, 0)
                 HStack(spacing: 0) {
                     Rectangle().fill(Palette.brandGradient).frame(width: width * media / total)
-                    Rectangle().fill(Color.secondary.opacity(0.45)).frame(width: width * other / total)
+                    Rectangle().fill(Palette.grey).frame(width: width * other / total)
                     Spacer(minLength: 0)
                 }
                 .background(Palette.strongFill)
@@ -137,7 +137,7 @@ struct CapacityBar: View {
             if !compact {
                 HStack(spacing: Spacing.l) {
                     legendDot(Palette.brandGradient, "Scanned media", mediaBytes)
-                    legendDot(Color.secondary.opacity(0.45), "Other data", max(volume.usedBytes - mediaBytes, 0))
+                    legendDot(Palette.grey, "Other data", max(volume.usedBytes - mediaBytes, 0))
                     legendDot(Palette.strongFill, "Available", volume.availableBytes)
                 }
                 .font(.caption)

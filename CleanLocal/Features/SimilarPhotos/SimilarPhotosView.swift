@@ -99,7 +99,7 @@ struct SimilarPhotosView: View {
             }
         case .completed where analysis.similarGroups.isEmpty:
             EmptyStateView(symbol: "checkmark.seal.fill", title: "No Similar Photos",
-                           message: "Try a looser similarity setting to widen the search.", tint: Palette.success)
+                           message: "Try a looser similarity setting to widen the search.", tint: Palette.accent)
         default:
             ScrollView {
                 LazyVStack(spacing: Spacing.l) {
@@ -161,19 +161,18 @@ private struct SimilarGroupCard: View {
                 .frame(width: 168, height: 168)
                 .clipShape(RoundedRectangle(cornerRadius: Radius.medium, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: Radius.medium, style: .continuous)
-                    .strokeBorder(isSelected ? Color.accentColor : Palette.cardStroke, lineWidth: isSelected ? 3 : 1))
+                    .strokeBorder(isSelected ? Palette.accent : Palette.cardStroke, lineWidth: isSelected ? 3 : 1))
                 .overlay(alignment: .topLeading) {
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 20, weight: .semibold))
                         .symbolRenderingMode(.palette)
-                        .foregroundStyle(.white, isSelected ? Color.accentColor : Color.black.opacity(0.25))
+                        .foregroundStyle(Palette.porcelain, isSelected ? Palette.accent : Palette.black.opacity(0.25))
                         .shadow(radius: 2)
                         .padding(Spacing.s)
                 }
                 .overlay(alignment: .bottomLeading) {
                     if item.id == group.suggestedKeeperID {
-                        Badge(text: "Best Quality", symbol: "star.fill", tint: .white)
-                            .background(Capsule().fill(Palette.success))
+                        Badge(text: "Best Quality", symbol: "star.fill", tint: Palette.success)
                             .padding(Spacing.s)
                     }
                 }

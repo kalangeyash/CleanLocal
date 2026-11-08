@@ -27,7 +27,7 @@ struct MediaGridCell: View {
         .padding(Spacing.xs)
         .background {
             RoundedRectangle(cornerRadius: Radius.medium + 2, style: .continuous)
-                .fill(isSelected ? Color.accentColor.opacity(0.12) : (isHovering ? Palette.subtleFill : .clear))
+                .fill(isSelected ? Palette.accent.opacity(0.12) : (isHovering ? Palette.subtleFill : .clear))
         }
         .contentShape(Rectangle())
         .onHover { isHovering = $0 }
@@ -49,9 +49,9 @@ struct MediaGridCell: View {
                 if item.isPhotosAsset {
                     Image(systemName: "photo.stack.fill")
                         .font(.caption2.weight(.bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Palette.porcelain)
                         .padding(5)
-                        .background(Circle().fill(.black.opacity(0.45)))
+                        .background(Circle().fill(Palette.black.opacity(0.5)))
                         .padding(Spacing.s)
                         .help("In your Photos library")
                 }
@@ -60,17 +60,17 @@ struct MediaGridCell: View {
                 if let duration = item.duration, item.kind == .video {
                     Label(duration.formattedDuration, systemImage: "play.fill")
                         .font(.caption2.weight(.semibold).monospacedDigit())
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Palette.porcelain)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
-                        .background(Capsule().fill(.black.opacity(0.55)))
+                        .background(Capsule().fill(Palette.black.opacity(0.6)))
                         .padding(Spacing.s)
                 }
             }
             .overlay {
                 RoundedRectangle(cornerRadius: Radius.medium, style: .continuous)
                     .strokeBorder(
-                        isSelected ? Color.accentColor : (isFocused ? Color.accentColor.opacity(0.55) : Palette.cardStroke),
+                        isSelected ? Palette.accent : (isFocused ? Palette.accent.opacity(0.55) : Palette.cardStroke),
                         lineWidth: isSelected ? 3 : (isFocused ? 2 : 1)
                     )
             }
@@ -82,7 +82,7 @@ struct MediaGridCell: View {
             Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                 .font(.system(size: 20, weight: .semibold))
                 .symbolRenderingMode(.palette)
-                .foregroundStyle(.white, isSelected ? Color.accentColor : Color.black.opacity(0.25))
+                .foregroundStyle(Palette.porcelain, isSelected ? Palette.accent : Palette.black.opacity(0.25))
                 .shadow(color: .black.opacity(0.35), radius: 2)
                 .padding(Spacing.s)
                 .contentShape(Rectangle())
