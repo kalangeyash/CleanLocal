@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- CleanLocal runs fully sandboxed. It has no network entitlement: nothing leaves the Mac. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<!-- Folders the user explicitly picks in an open panel (needed to move files to the Trash). -->
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+	<!-- Persist access to user-picked folders across launches via security-scoped bookmarks. -->
+	<key>com.apple.security.files.bookmarks.app-scope</key>
+	<true/>
+	<!-- Apple Photos library access through PhotoKit (still gated by the system privacy prompt). -->
+	<key>com.apple.security.personal-information.photos-library</key>
+	<true/>
+</dict>
+</plist>
