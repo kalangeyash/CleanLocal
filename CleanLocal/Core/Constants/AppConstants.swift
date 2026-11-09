@@ -5,7 +5,7 @@ import OSLog
 enum AppConstants {
     static let appName = "CleanLocal"
     static let tagline = "Your Mac. Your Storage. Your Control."
-    static let bundleIdentifier = Bundle.main.bundleIdentifier ?? "com.yourdomain.cleanlocal"
+    static let bundleIdentifier = Bundle.main.bundleIdentifier ?? "com.kalangeyash.cleanlocal"
 
     static var version: String {
         let short = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
@@ -51,7 +51,7 @@ enum AppConstants {
 }
 
 extension Logger {
-    private static let subsystem = Bundle.main.bundleIdentifier ?? "com.yourdomain.cleanlocal"
+    private static let subsystem = Bundle.main.bundleIdentifier ?? "com.kalangeyash.cleanlocal"
     static let scanning = Logger(subsystem: subsystem, category: "scanning")
     static let deletion = Logger(subsystem: subsystem, category: "deletion")
     static let persistence = Logger(subsystem: subsystem, category: "persistence")

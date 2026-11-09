@@ -72,7 +72,9 @@ Scripts/test.sh             # 118 XCTest cases (temporary directories only)
 
 You can also open `CleanLocal.xcodeproj` in Xcode, choose the **CleanLocal** scheme and press ⌘R. Key components have `#Preview` canvases with sample data (`CleanLocal/Resources/PreviewSupport.swift`).
 
-**Install:** copy the Release `CleanLocal.app` to `/Applications`. For other Macs, set your team, replace `com.yourdomain.cleanlocal` with your own bundle identifier, then archive, sign with Developer ID and notarize.
+**Install from GitHub:** download `CleanLocal-<version>.dmg` from [Releases](https://github.com/kalangeyash/CleanLocal/releases), drag CleanLocal to Applications, then follow the first-launch steps in the release notes. Release builds are ad-hoc signed and not notarized (see below).
+
+**Build your own release:** `Scripts/release.sh` builds, verifies and packages a DMG and ZIP into `dist/`. To distribute without Gatekeeper warnings, set a Developer ID team in Xcode, then archive, sign and notarize.
 
 **First run:** for media, choose your media folders and/or connect Photos. For cleanup, grant your **Home folder**, and optionally the **Trash**. See [Docs/PERMISSIONS.md](Docs/PERMISSIONS.md).
 
@@ -87,6 +89,8 @@ Destructive tests run only in temporary directories, and use fake removers that 
 The palette is Black `#000000`, Grey `#80807E`, Porcelain `#FFFFFC`, Khaki Beige `#BEB7A4`, Vivid Tangerine `#FF7F11`, Blaze Orange `#FF5F09` and Blazing Flame `#FF3F00`, applied in light and dark mode with WCAG AA text contrast. Safety colors map to the palette: Safe = Khaki, Review = Tangerine, Protected = Flame. See [Docs/ARCHITECTURE.md](Docs/ARCHITECTURE.md).
 
 ## Known limitations
+
+- **Not notarized.** Public builds are ad-hoc signed because notarization requires a paid Developer ID certificate. macOS blocks the first launch until you approve it (Control-click › Open, or System Settings › Privacy & Security › Open Anyway). Verify downloads against the SHA-256 checksums published with each release.
 
 - **Sandbox scope.** CleanLocal sees only what you grant. Locations macOS protects even after a grant are skipped and listed with the reason, never worked around: other apps' containers may prompt, and Safari caches and Mail stay closed. `/opt/homebrew`, other users' files, swap, APFS snapshots and system caches appear only as an inferred total.
 - **Package-manager commands aren't run.** A sandboxed app can't run `npm`/`gradle`/`docker` against your home folder. Caches are cleaned only where removing the folder is equivalent to the documented command, and Docker and pnpm stores are left to their own tools.

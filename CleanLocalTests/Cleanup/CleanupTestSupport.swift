@@ -75,6 +75,6 @@ func makeRuleContext(
         running: running,
         now: .now,
         thresholds: CleanupThresholds(),
-        ownBundleID: "com.yourdomain.cleanlocal"
+        ownBundleID: "com.kalangeyash.cleanlocal"
     )
 }
