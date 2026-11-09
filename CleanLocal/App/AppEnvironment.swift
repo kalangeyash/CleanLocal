@@ -12,6 +12,11 @@ final class AppEnvironment {
     let photos: PhotosLibraryService
     let storage: StorageAnalyticsService
     let persistence: PersistenceController
+    let access: AccessStore
+    let cleanup: CleanupStore
+    let trash: TrashStore
+    let storageStore: StorageStore
+    let maintenance: MaintenanceStore
 
     init(
         persistence: PersistenceController = .live(),
@@ -46,14 +51,27 @@ final class AppEnvironment {
             analysis: analysis,
             persistence: persistence
         )
+        access = AccessStore(persistence: persistence)
+        trash = TrashStore(access: access, library: library, deletion: deletion)
+        cleanup = CleanupStore(access: access, settings: settings, deletion: deletion, trash: trash,
+                               engine: SafetyPolicyEngine(homePath: UserDirectories.realHomePath))
+        storageStore = StorageStore(access: access, storage: storage)
+        maintenance = MaintenanceStore(access: access)
         library.onScanCompleted = { [weak analysis] in analysis?.libraryDidRescan() }
+        cleanup.onItemsRemoved = { [weak storageStore] paths in storageStore?.markRemoved(paths) }
     }
 
     /// Loads persisted state and restores folder access. Safe to call more than once.
     func bootstrap() async {
+        if CommandLine.arguments.contains("-CleanLocalAccessReport") {
+            // Diagnostics: records what the sandbox allows, inside the app's own container.
+            AccessAuditor.writeReport(to: FileManager.default.temporaryDirectory.appendingPathComponent("access-report.json"))
+        }
         settings.applyAppearance()
+        await access.bootstrap()
         await library.bootstrap()
         await deletion.bootstrap()
+        storageStore.refreshAreas()
         if !library.items.isEmpty, settings.analyzeDuplicatesAfterScan, analysis.duplicatePhase == .notStarted {
             analysis.analyzeDuplicates()
         }
@@ -75,6 +93,11 @@ extension View {
             .environment(environment.analysis)
             .environment(environment.deletion)
             .environment(environment.navigation)
+            .environment(environment.access)
+            .environment(environment.cleanup)
+            .environment(environment.trash)
+            .environment(environment.storageStore)
+            .environment(environment.maintenance)
             .environment(\.thumbnailService, environment.thumbnails)
             .environment(\.photosService, environment.photos)
             .environment(\.storageService, environment.storage)

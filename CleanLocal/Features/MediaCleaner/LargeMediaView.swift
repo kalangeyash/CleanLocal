@@ -1,6 +1,7 @@
 import SwiftUI
 
-struct LargeFilesView: View {
+/// Large photos and videos (media index). The all-files version is `LargeFilesView`.
+struct LargeMediaView: View {
     /// Threshold presets in megabytes; `nil` means a custom value.
     private static let presets: [Int?] = [10, 50, 100, 500, nil]
 
@@ -11,7 +12,7 @@ struct LargeFilesView: View {
 
     var body: some View {
         MediaBrowserView(
-            title: "Large Files",
+            title: "Large Media",
             items: library.items.filter { $0.size >= thresholdBytes },
             revision: [AnyHashable(library.revision), AnyHashable(thresholdBytes)],
             configuration: MediaBrowserConfiguration(

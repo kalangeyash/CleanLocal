@@ -328,7 +328,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = CleanLocal;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Your Mac. Your Media. Your Control.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Your Mac. Your Storage. Your Control.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "CleanLocal analyzes your Photos library on this Mac to find large videos, screenshots and duplicates. Nothing is uploaded, and nothing is removed without your confirmation.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -358,7 +358,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = CleanLocal;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
-				INFOPLIST_KEY_NSHumanReadableCopyright = "Your Mac. Your Media. Your Control.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Your Mac. Your Storage. Your Control.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "CleanLocal analyzes your Photos library on this Mac to find large videos, screenshots and duplicates. Nothing is uploaded, and nothing is removed without your confirmation.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

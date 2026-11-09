@@ -21,6 +21,29 @@ CleanLocal uses MVVM with explicit service boundaries. SwiftUI views stay thin; 
 
 `AppEnvironment` (`App/AppEnvironment.swift`) is the composition root. It builds every service and store once and injects them into each window with `cleanLocalEnvironment(_:)`. Tests build the same graph with temporary persistence, a private `UserDefaults` suite and a test path policy.
 
+## Cleanup pipeline
+
+```
+ CleanupRules (one per category, verified locations only)
+        │ CandidateDraft (url, scope, proposed safety, reasons, owner)
+        ▼
+ CleanupScanner ── CleanupEligibility.measure (same sizing the executor uses)
+        │          SafetyPolicyEngine.classify  → Safe / Review / Protected + reasons
+        ▼
+ CleanupStore (selection: Safe pre-selected, Review never) → CleanupSheet preview
+        ▼
+ CleanupExecutionService ── SafetyPolicyEngine.validateForRemoval (again, per file)
+        │                   FileRemoving (Trash by default; immediate only for opted-in Safe caches)
+        ▼
+ CleanupReport (per item: removed / skipped / errors / trashed paths) → history, "Free Space Now"
+```
+
+- **Scopes.** `.item` removes the entry, `.contents` removes eligible children and keeps the folder, and `.filesOlderThan(days)` removes old files and keeps folders.
+- **Ownership.** Folder names are parsed as bundle identifiers (handling `.plist`/`.savedState` suffixes and `group.`/Team-ID prefixes) and checked with LaunchServices (`AppCataloging`, injectable for tests).
+- **Space.** `FileSpaceInspector` combines `lstat` (link count, inode, flags) with `getattrlist` (`ATTR_CMNEXT_PRIVATESIZE`, `ATTR_CMNEXT_CLONEID`, `ATTR_CMNEXT_EXT_FLAGS`). `DirectorySizer` and `DiskUsageScanner` never follow symlinks, never cross mount points and count hard links once.
+- **Storage.** One `DiskUsageScanner` pass over the Home folder powers the Storage Analyzer, Large Files, Old Files and file duplicates. Files under 1 MB are aggregated per folder to bound memory. `StorageBreakdownService` partitions used space without double counting; whatever the sandbox can't see is reported as an explicitly inferred remainder.
+- **Media.** Media deletion (`SafeDeletionService`) applies the same protection rules and validation before trashing, and records trashed paths so "Free Space Now" works for media too.
+
 ## Data model
 
 - `MediaItem` is an immutable-by-convention `Sendable` struct. Its ID is the absolute path for files, or `photos:<localIdentifier>` for Photos assets. `MediaSource` records which deletion path applies (filesystem or PhotoKit).
@@ -74,6 +97,8 @@ Writes are atomic. A corrupt file, or one with an incompatible schema version, i
 ## Design system
 
 All colors come from the brand palette in `DesignSystem/Theme.swift` (`Palette`). Don't introduce other hex values; derive new tokens from these seven.
+
+Safety colors: Safe = Khaki, Review = Tangerine, Protected = Flame (each with a symbol, so color is never the only signal).
 
 | Token | Hex | Role |
 | --- | --- | --- |

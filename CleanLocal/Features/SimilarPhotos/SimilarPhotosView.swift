@@ -181,13 +181,13 @@ private struct SimilarGroupCard: View {
                     if isSelected { selection.remove(item.id) } else { selection.insert(item.id) }
                 }
             Text(item.filename).font(.caption.weight(.medium)).lineLimit(1).truncationMode(.middle)
-            Text("\(item.dimensionsDescription ?? "—") · \(item.size.formattedBytes)")
+            Text("\(item.dimensionsDescription ?? "—") · \(item.displaySize)")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
         }
         .frame(width: 168)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(item.filename), \(item.size.formattedBytes)\(item.id == group.suggestedKeeperID ? ", best quality" : "")")
+        .accessibilityLabel("\(item.filename), \(item.displaySize)\(item.id == group.suggestedKeeperID ? ", best quality" : "")")
         .accessibilityAddTraits(isSelected ? [.isSelected, .isButton] : .isButton)
     }
 }

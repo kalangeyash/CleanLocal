@@ -1,160 +1,99 @@
 # CleanLocal
 
-**Your Mac. Your Media. Your Control.**
+**Your Mac. Your Storage. Your Control.**
 
-CleanLocal is a native macOS app that finds the photos and videos taking up space on your Mac — large files, exact duplicates, look-alike shots, old media and screenshots — and helps you safely move what you no longer need to the Trash.
+CleanLocal is a native macOS storage cleaner and maintenance app. It shows what is using your disk, finds caches, logs, developer leftovers, duplicates and forgotten media, and removes only what you approve. It's fully sandboxed and works entirely on your Mac. It has no network access, no analytics and no automatic deletion.
 
-Everything happens on your Mac. CleanLocal has no network access, no analytics and no automatic deletion.
+> **Guiding rule:** aggressive in *discovering* wasted space, conservative in deciding what's *safe* to remove, transparent about every action.
 
 ---
 
-## Features
+## Modules
 
-| Area | What it does |
-| --- | --- |
-| **Overview** | Live scan progress, real totals (media count and size, photos, videos, duplicates, large files, potential savings), an interactive storage donut and startup-disk usage. |
-| **Scanning** | Scans only folders you choose (Desktop, Downloads, Pictures, Movies, any folder or external drive) and, optionally, your Apple Photos library. Incremental, cancellable and parallel with a fixed concurrency limit. |
-| **All Media / Videos / Recently Scanned** | Lazy grid or list browser with search, sort, type and source filters, Finder-style multi-select and keyboard navigation. |
-| **Large Files** | > 10 / 50 / 100 / 500 MB or a custom threshold, largest first, with the selected size shown live. |
-| **Duplicate Media** | Three-stage detection (size → edge fingerprint → SHA-256). Suggests which copy to keep; never auto-selects the last copy. |
-| **Similar Photos** | Perceptual hashing (pHash + dHash) with an adjustable threshold. You review every group; nothing is pre-selected. |
-| **Old Media** | Older than 6 months / 1 / 2 / 5 years or a custom date range, for review only. |
-| **Screenshots** | Detected from macOS screenshot metadata, standard screenshot names and Screenshots folders; grouped by month. |
-| **Photos Library** | PhotoKit integration: albums, thumbnails, metadata, duplicates, large videos, screenshots, and deletion through Photos' own confirmation. |
-| **Preview** | Separate window with a downsampled image or video player plus a metadata inspector. |
-| **Safe deletion** | Confirmation sheet listing every file, then `FileManager.trashItem` (never permanent deletion), with a per-file result. |
-| **Trash & History** | Log of every removal, including failures and their reasons. |
-| **Storage** | Disk capacity per volume, media by category and location, largest media folders, and definitions of each figure. |
-| **Settings** | Theme, locations, file types, detection thresholds, cache and index management, privacy information. |
+| Group | Module | What it does |
+| --- | --- | --- |
+| Overview | **Overview** | Disk usage with a clickable breakdown of "Other data", cleanup potential, media stats and recommended actions. |
+| | **Smart Cleanup** | One scan across every category. Each finding is classified **Safe**, **Review** or **Protected**, with an explanation. Only Safe items are pre-selected. |
+| Cleanup | **System Junk** | Old logs, crash and diagnostic reports, saved window state. |
+| | **Application Cache** | `~/Library/Caches`, per app. Only contents not changed in 15 minutes are removed; folders are kept and running apps are skipped. |
+| | **Temporary Files** | Stale incomplete downloads, app tmp folders, old installers and archives (Review). |
+| | **Browser Cleanup** | Cache folders only for Safari, Chrome, Edge, Brave and Firefox. Cookies, sign-ins, history, bookmarks, extensions and tabs are never touched. |
+| | **Developer Cleanup** | DerivedData, Archives, Device Support, simulator caches, npm/Yarn/pnpm/Gradle/Maven/CocoaPods/SwiftPM/pip/Go/Homebrew/Playwright caches, plus `node_modules`, build outputs and virtualenvs in the project folders you choose. Docker data is reported only. |
+| | **Application Leftovers** | Data left by apps that are no longer installed (checked through LaunchServices). Shared group containers are protected. |
+| Files & Media | **Large Files** | Every file type, with 10 MB to 1 GB+ or custom thresholds, by kind; shows logical size, size on disk and what removal actually frees. |
+| | **Duplicate Finder** | Photos & videos (SHA-256, plus iCloud "probable" matches), and any file type, with clone awareness. |
+| | **Media Cleaner** | Gallery, videos, screenshots, similar photos (pHash/dHash), large and old media, Photos library (PhotoKit). |
+| | **Old Files** | Files you haven't changed in years, for review. |
+| Storage | **Storage Analyzer** | DaisyDisk-style drill-down with a ring chart, plus a breakdown of used space by area. |
+| | **Trash Manager** | See what's in the Trash (including external drives) and empty all or part of it, after confirmation. |
+| | **Maintenance** | Read-only Mac, battery, disk, storage and login-item information, plus an access overview. Links to Disk Utility and System Settings. |
+| Activity | **Cleanup History** | Every removal with its category, size, status and any errors. |
 
-### Supported formats
+Quick Look previews (Space or the eye button) are available wherever files are listed.
 
-- **Images:** JPEG, HEIC/HEIF, PNG, GIF, TIFF, BMP, WebP, and RAW (DNG, CR2, CR3, NEF, ARW, ORF, RW2, RAF and more, wherever ImageIO can read them).
-- **Videos:** MP4, MOV, M4V, AVI, MKV, plus 3GP, MTS/M2TS, MPEG, WMV, WebM, FLV and OGV.
+## Safety model
 
-Files AVFoundation or ImageIO can't decode are still indexed with their size and dates.
+All removals go through one **`SafetyPolicyEngine`** and one execution service. There is no other code path that deletes files.
+
+1. **Classification at scan time.** Every candidate is Safe, Review or Protected, with reasons based on verified locations, app ownership (LaunchServices), running apps, recent changes and file metadata. Filenames alone never decide.
+2. **Hard protection.** System locations, `/Applications`, keychains, cookies, Mail, Messages, iCloud Drive, credentials (`.ssh`, `.aws`, `.p12`, provisioning profiles…), app databases outside cache folders, app bundles, browser profiles, Docker data, the Trash, and top-level home folders. These can't be selected through any screen or service, and there's no override.
+3. **Re-validation right before removal.** The file must still exist and be the same file (same inode). It must be inside the granted folder, with no symlink escape and no crossing onto another mount point. It must not be locked, and the owning app must not be running.
+4. **Scoped removal.** Folder *contents* are removed (never the folder itself), and logs are removed by age. Nothing is ever deleted with a recursive wipe.
+5. **The Trash is the default.** Immediate deletion is opt-in and limited to Safe, rebuildable caches. Partial failures are reported per item, and nothing claims space was freed unless the system confirmed it.
+
+## Accurate space accounting
+
+- **APFS clones and hard links.** CleanLocal reads each file's APFS *private size* and clone ID with `getattrlist(2)`, and its link count. Removing a clone or a hard-linked file frees little or nothing, and CleanLocal shows that ("frees …") instead of the file's nominal size. Duplicate groups made of clones are marked.
+- **Logical vs on-disk size.** Both are shown. Disk analysis counts hard-linked files once.
+- **"Other data" explained.** The Storage Analyzer splits used space into Photos libraries, Downloads, app data, projects, Xcode, developer caches, app caches, applications, macOS and *System Data & Other*. The last area is what the sandbox can't see (other users, swap, `/opt`, snapshots, purgeable space) and is labelled as inferred.
+- **Freeing space now.** After any cleanup you can permanently remove just the items CleanLocal moved to the Trash, or manage the whole Trash in Trash Manager.
+
+## Photos library
+
+- PhotoKit only; the `.photoslibrary` package is never touched directly. Deletion uses `PHPhotoLibrary.performChanges` with Photos' own confirmation, and items go to Recently Deleted.
+- **Sizes.** Read from asset metadata when available. Otherwise they're measured with the public `PHAssetResourceManager` API (resources are streamed and counted, never stored). Assets whose size truly can't be determined are labelled "Unknown size", never "0 KB".
+- **iCloud-only originals.** CleanLocal matches them as **Probable duplicates** using dimensions, capture time, duration and the appearance of locally cached thumbnails. These are never auto-selected or counted as savings. An opt-in setting lets *Photos* fetch the originals for byte-for-byte verification.
 
 ---
 
 ## Requirements
 
-- macOS 15.0 or later (Apple silicon or Intel)
-- Xcode 16 or later to build (developed with Xcode 27.2 and the macOS 27.2 SDK)
+- macOS 15.0 or later
+- Xcode 16 or later (developed with Xcode 27.2 and the macOS 27.2 SDK)
 - No third-party dependencies
 
-## Build and run
-
-### Xcode
-
-1. Open `CleanLocal.xcodeproj`.
-2. Select the **CleanLocal** scheme and **My Mac**.
-3. Press **⌘R**.
-
-The project signs with **Sign to Run Locally** by default, which works out of the box on your own Mac. To distribute the app, set your team under *Signing & Capabilities*, and change the bundle identifier `com.yourdomain.cleanlocal` to one in your own domain.
-
-### Command line
+## Build, test and install
 
 ```bash
-Scripts/build.sh            # Debug build → build/DerivedData/Build/Products/Debug/CleanLocal.app
-Scripts/build.sh Release    # Release build
-Scripts/test.sh             # Run the unit and integration test suite
+Scripts/build.sh            # Debug  → build/DerivedData/Build/Products/Debug/CleanLocal.app
+Scripts/build.sh Release    # Release
+Scripts/test.sh             # 118 XCTest cases (temporary directories only)
 ```
 
-The scripts use the Xcode found at `/Applications/Xcode.app` when `xcode-select` points at the Command Line Tools. Your system setting is not changed.
+You can also open `CleanLocal.xcodeproj` in Xcode, choose the **CleanLocal** scheme and press ⌘R. Key components have `#Preview` canvases with sample data (`CleanLocal/Resources/PreviewSupport.swift`).
 
-## Install
+**Install:** copy the Release `CleanLocal.app` to `/Applications`. For other Macs, set your team, replace `com.yourdomain.cleanlocal` with your own bundle identifier, then archive, sign with Developer ID and notarize.
 
-1. Build the Release configuration: `Scripts/build.sh Release`.
-2. Copy `build/DerivedData/Build/Products/Release/CleanLocal.app` to `/Applications`.
-3. Open it. On first launch, choose the folders to scan; macOS asks you to confirm each one.
-
-To share the app with other Macs, archive it in Xcode (*Product › Archive*), sign it with a Developer ID, and notarize it.
-
----
-
-## Design
-
-CleanLocal uses a warm seven-color palette: Black `#000000`, Grey `#80807E`, Porcelain `#FFFFFC`, Khaki Beige `#BEB7A4`, Vivid Tangerine `#FF7F11`, Blaze Orange `#FF5F09` and Blazing Flame `#FF3F00`. It's applied consistently in light and dark mode, with WCAG AA contrast for text. See *Design system* in [Docs/ARCHITECTURE.md](Docs/ARCHITECTURE.md).
-
-## Safety model
-
-CleanLocal is built so that it **can't** remove anything you didn't explicitly choose:
-
-1. Nothing is ever deleted automatically. Every removal goes through a confirmation sheet that lists each file, its location and the total size.
-2. Files are **moved to the Trash** (`FileManager.trashItem`), never erased. Photos assets go to **Recently Deleted** through PhotoKit, after Photos' own system confirmation.
-3. Immediately before moving a file, CleanLocal re-checks it against the live filesystem:
-   - it must be inside a folder you authorized;
-   - it must not be in a protected location (`/System`, `/Library`, `/Applications`, `~/Library`, and others) or inside a package (`.app`, `.photoslibrary`, `.fcpbundle`, and others);
-   - it must be a regular file — symbolic links are refused, as are symlinked parent folders that point outside the authorized folder;
-   - its size and modification date must still match the scan; if the file changed, you're asked to rescan;
-   - it must not be locked.
-4. Duplicate auto-selection always keeps at least one copy per group. If you manually select every copy, the confirmation sheet warns you.
-5. Storage is only reported as reclaimed after the system confirms the move succeeded.
-
-## Privacy
-
-- The app is sandboxed and has **no network entitlement**. It cannot upload, sync or download anything, and it does not fetch iCloud originals.
-- There is no telemetry, analytics or crash-reporting SDK.
-- CleanLocal stores a metadata index, thumbnails, preferences and an activity log inside its own sandbox container. You can clear each of them in *Settings › Data & Cache*.
-
-See [Docs/PERMISSIONS.md](Docs/PERMISSIONS.md) for every permission CleanLocal uses and why.
-
----
-
-## Project structure
-
-```
-CleanLocal/
-├── App/            Entry point, composition root (AppEnvironment), menu commands
-├── Core/           Models, typed errors, constants, formatting, utilities
-│                   (classification, screenshot detection, path policy, hashing)
-├── Services/       Scanner, metadata, thumbnails, duplicates, similarity,
-│                   safe deletion, storage analytics, PhotoKit, bookmarks
-├── Persistence/    Versioned, atomic JSON stores in Application Support
-├── Stores/         @MainActor @Observable state: library, analysis, deletion,
-│                   settings, navigation
-├── DesignSystem/   Palette, spacing, typography, card and button styles
-├── Components/     Sidebar, media grid/list/browser, preview window,
-│                   deletion sheet, charts, shared views
-├── Features/       One folder per screen (Dashboard, LargeFiles, DuplicateFinder, …)
-└── Resources/      Asset catalog (app icon, accent color)
-CleanLocalTests/    XCTest suite (generated media in temporary directories only)
-Config/             Entitlements
-Scripts/            build, test and app-icon generation scripts
-Docs/               Architecture and permissions documentation
-```
-
-See [Docs/ARCHITECTURE.md](Docs/ARCHITECTURE.md) for design decisions, concurrency and data flow.
+**First run:** for media, choose your media folders and/or connect Photos. For cleanup, grant your **Home folder**, and optionally the **Trash**. See [Docs/PERMISSIONS.md](Docs/PERMISSIONS.md).
 
 ## Testing
 
-`Scripts/test.sh` runs 91 XCTest cases inside the sandboxed app host:
+The suite covers the safety engine (every protected class, classification and re-validation), clone and hard-link accounting, every cleanup rule against a generated fake home folder (including installed vs. uninstalled apps, running apps, recent files and unreadable folders), scoped execution, partial failures, refusal of replaced or protected items, Trash emptying limits, disk analysis, the storage breakdown, file and media duplicates (including iCloud probable matches), scanning, persistence, bookmarks and the end-to-end media flow.
 
-- media classification, screenshot detection and protected-path rules
-- metadata extraction (dimensions, EXIF dates, orientation) from generated images
-- SHA-256 and edge fingerprints, perceptual hashing on resized or recompressed copies
-- directory scanning: hidden files, packages, symlink loops, unreadable folders, overlapping roots, incremental rescans, cancellation and progress
-- duplicate detection, keeper suggestions and auto-selection invariants; similarity grouping
-- safe deletion: protected paths, outside-root files, symlinks, files changed since the scan, missing files, locked files, disconnected volumes, partial failures, error mapping and the Photos path
-- security-scoped bookmarks, revoked access and persistence (round trip, corrupt files, schema changes)
-- storage calculations, settings persistence, query, selection and pruning logic
-- an end-to-end store test: add a folder → scan → find duplicates → delete → reload from disk
+Destructive tests run only in temporary directories, and use fake removers that never touch the real Trash.
 
-Tests only touch temporary directories. Deletion tests use a fake Trash that moves files into a temporary folder, so nothing ever lands in your real Trash.
+## Design
 
----
+The palette is Black `#000000`, Grey `#80807E`, Porcelain `#FFFFFC`, Khaki Beige `#BEB7A4`, Vivid Tangerine `#FF7F11`, Blaze Orange `#FF5F09` and Blazing Flame `#FF3F00`, applied in light and dark mode with WCAG AA text contrast. Safety colors map to the palette: Safe = Khaki, Review = Tangerine, Protected = Flame. See [Docs/ARCHITECTURE.md](Docs/ARCHITECTURE.md).
 
 ## Known limitations
 
-- **Photos file sizes.** PhotoKit has no public file-size API. CleanLocal reads `PHAssetResource`'s `fileSize` value only when the resource exposes it, and otherwise reports the size as unknown (0 bytes).
-- **iCloud-only originals.** With *Optimize Mac Storage* turned on, some originals exist only in iCloud. Because CleanLocal never uses the network, it can't hash or preview those items, so they are skipped during duplicate detection.
-- **APFS clones.** Copies made in Finder on APFS can share disk blocks. "Potentially reclaimable" uses logical file sizes, so removing a cloned copy may free less space than shown.
-- **Space is freed when you empty the Trash.** Photos items free space once they're cleared from Recently Deleted. With iCloud Photos turned on, Photos deletions sync to all your devices.
-- **Similar-photo grouping** compares every pair of photos. Fingerprints are cached, but grouping libraries above roughly 50,000 photos can take tens of seconds.
-- **Scanning runs only while CleanLocal is open.** It runs in the background of the open app; there is no login item or daemon.
-- **Disconnected drives.** Items on an unplugged drive stay in the index and show as unavailable. Removing them is refused until the drive is reconnected.
+- **Sandbox scope.** CleanLocal sees only what you grant. Locations macOS protects even after a grant are skipped and listed with the reason, never worked around: other apps' containers may prompt, and Safari caches and Mail stay closed. `/opt/homebrew`, other users' files, swap, APFS snapshots and system caches appear only as an inferred total.
+- **Package-manager commands aren't run.** A sandboxed app can't run `npm`/`gradle`/`docker` against your home folder. Caches are cleaned only where removing the folder is equivalent to the documented command, and Docker and pnpm stores are left to their own tools.
+- **Photos file sizes.** The fast path reads `PHAssetResource`'s undocumented `fileSize` value, only if the object responds to it. The fallback uses public APIs only, but it reads the resource data, which is slower.
+- **Login items.** macOS has no public API to list modern (SMAppService) login items, so CleanLocal lists LaunchAgents it can read and links to System Settings. Startup impact isn't estimated.
+- **Similar-photo grouping** compares fingerprints pairwise. Libraries above roughly 50,000 photos can take tens of seconds.
 
 ## Git workflow
 
-- `main` always builds and passes the tests.
-- Work happens on `feature/*` branches merged with `--no-ff`, and commits follow [Conventional Commits](https://www.conventionalcommits.org) (`feat:`, `fix:`, `test:`, `docs:`, `chore:`).
+`main` always builds and passes the tests. Work happens on `feature/*` branches merged with `--no-ff`, using [Conventional Commits](https://www.conventionalcommits.org).

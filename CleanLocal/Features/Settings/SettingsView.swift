@@ -5,12 +5,14 @@ struct SettingsView: View {
     var embedded = false
 
     enum Tab: String, CaseIterable, Identifiable {
-        case general, locations, fileTypes, detection, storage, privacy, about
+        case general, cleanup, access, locations, fileTypes, detection, storage, privacy, about
         var id: String { rawValue }
         var title: String {
             switch self {
             case .general: "General"
-            case .locations: "Locations"
+            case .cleanup: "Cleanup"
+            case .access: "Access"
+            case .locations: "Media Folders"
             case .fileTypes: "File Types"
             case .detection: "Detection"
             case .storage: "Data & Cache"
@@ -22,6 +24,8 @@ struct SettingsView: View {
         var symbol: String {
             switch self {
             case .general: "gearshape"
+            case .cleanup: "sparkles"
+            case .access: "lock.shield"
             case .locations: "folder"
             case .fileTypes: "doc.richtext"
             case .detection: "slider.horizontal.3"
@@ -51,6 +55,8 @@ struct SettingsView: View {
     private func pane(for tab: Tab) -> some View {
         switch tab {
         case .general: GeneralSettingsPane()
+        case .cleanup: CleanupSettingsPane()
+        case .access: AccessSettingsPane()
         case .locations: LocationsSettingsPane()
         case .fileTypes: FileTypesSettingsPane()
         case .detection: DetectionSettingsPane()
@@ -304,13 +310,14 @@ private struct PrivacySettingsPane: View {
                 privacyRow("wifi.slash", "No network access", "CleanLocal has no network entitlement. It can’t upload, sync or phone home.")
                 privacyRow("cpu", "Everything on-device", "Scanning, hashing, similarity detection and thumbnails all run locally.")
                 privacyRow("chart.bar.xaxis", "No analytics or tracking", "There is no telemetry, crash reporting service or advertising SDK.")
-                privacyRow("folder.badge.person.crop", "Only what you allow", "The App Sandbox limits CleanLocal to folders you choose and, if you allow it, your Photos library via Apple’s PhotoKit.")
+                privacyRow("folder.badge.person.crop", "Only what you allow", "The App Sandbox limits CleanLocal to folders you choose and, if you allow it, your Photos library via Apple’s PhotoKit. No Full Disk Access, no admin rights, no helper tools.")
+                privacyRow("shield.lefthalf.filled", "One safety engine", "Every removal — media, caches, developer files, Trash — passes the same safety checks, twice: when it’s found and again right before it’s removed.")
                 privacyRow("trash.slash", "Nothing removed automatically", "Every removal needs your confirmation and goes to the Trash or Photos’ Recently Deleted, never erased outright.")
             } header: {
                 Text("Your Privacy")
             }
             Section("Data CleanLocal stores") {
-                Text("A metadata index (file names, sizes, dates, dimensions and content fingerprints), small thumbnail images, your preferences and an activity log — all inside CleanLocal’s private container on this Mac. Clear any of it under Data & Cache.")
+                Text("A media metadata index (file names, sizes, dates, dimensions and content fingerprints), small thumbnail images, folder-access bookmarks, your preferences and a cleanup log — all inside CleanLocal’s private container on this Mac. File contents are never stored. Cleanup scan results and the disk analysis are kept in memory only. Clear any stored data under Data & Cache.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -346,5 +353,97 @@ private struct AboutPane: View {
         }
         .padding(Spacing.xxxl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+
+private struct CleanupSettingsPane: View {
+    @Environment(SettingsStore.self) private var settings
+
+    var body: some View {
+        @Bindable var settings = settings
+        Form {
+            Section {
+                Toggle("Delete verified caches immediately", isOn: $settings.deleteCachesImmediately)
+            } header: {
+                Text("Cleanup Method")
+            } footer: {
+                Text("Off (recommended): everything goes to the Trash, so you can restore it. On: only rebuildable caches, logs and temporary files marked Safe are deleted immediately to free space right away. Review items always go to the Trash.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Section("Age Thresholds") {
+                Stepper("Logs older than \(settings.logAgeDays) days", value: $settings.logAgeDays, in: 1...365)
+                Stepper("Crash reports older than \(settings.crashReportAgeDays) days", value: $settings.crashReportAgeDays, in: 1...365)
+                Stepper("Installers older than \(settings.installerAgeDays) days", value: $settings.installerAgeDays, in: 0...365)
+            }
+            Section {
+                Toggle("Verify iCloud originals by downloading them through Photos", isOn: $settings.allowICloudVerification)
+            } header: {
+                Text("Photos Library")
+            } footer: {
+                Text("Off by default. When on, Photos (not CleanLocal) downloads originals stored only in iCloud so duplicates can be confirmed byte-for-byte. This uses bandwidth, temporarily uses disk space and can be slow. When off, iCloud-only items are matched by metadata and appearance and marked “Probable”.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+    }
+}
+
+private struct AccessSettingsPane: View {
+    @Environment(AccessStore.self) private var access
+
+    var body: some View {
+        Form {
+            Section {
+                grantRow(title: "Home Folder", detail: "Caches, logs, developer files, Downloads and the Storage Analyzer",
+                         granted: access.hasHomeAccess, grant: access.grantHomeAccess, revoke: { access.revoke(home: true) })
+                grantRow(title: "Trash", detail: "Trash Manager and “Free Space Now”",
+                         granted: access.hasTrashAccess, grant: access.grantTrashAccess, revoke: { access.revoke(home: false) })
+            } header: {
+                Text("Granted Folders")
+            } footer: {
+                Text("The App Sandbox keeps CleanLocal out of your files until you grant access here. CleanLocal never asks for Full Disk Access, administrator rights or a helper tool.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Section {
+                ForEach(access.developerFolders) { folder in
+                    HStack {
+                        Image(systemName: "folder.badge.gearshape").foregroundStyle(Palette.accent)
+                        Text(UserDirectories.abbreviate(path: folder.path))
+                        Spacer()
+                        Button("Remove") { access.removeDeveloperFolder(folder.id) }.buttonStyle(.borderless)
+                    }
+                }
+                Button("Add Developer Folders…") { access.addDeveloperFolders() }
+            } header: {
+                Text("Developer Folders")
+            } footer: {
+                Text("Only these folders are searched for node_modules, build outputs and virtual environments.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+            Section("Current Access") {
+                ForEach(access.audit) { check in
+                    LabeledContent(check.title, value: check.statusTitle)
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .onAppear { access.refreshAudit() }
+    }
+
+    private func grantRow(title: String, detail: String, granted: Bool, grant: @escaping () -> Void, revoke: @escaping () -> Void) -> some View {
+        HStack {
+            Image(systemName: granted ? "checkmark.circle.fill" : "lock.circle").foregroundStyle(granted ? Palette.ink : Palette.grey)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                Text(detail).font(.caption).foregroundStyle(.secondary)
+            }
+            Spacer()
+            if granted {
+                Button("Revoke", action: revoke).buttonStyle(.borderless)
+            } else {
+                Button("Grant…", action: grant)
+            }
+        }
     }
 }

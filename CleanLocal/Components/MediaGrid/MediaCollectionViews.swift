@@ -192,7 +192,7 @@ struct MediaListView: View {
             .width(min: 220, ideal: 320)
             TableColumn("Kind") { Text($0.typeDescription).foregroundStyle(.secondary) }
                 .width(min: 50, ideal: 70)
-            TableColumn("Size") { Text($0.size.formattedBytes).monospacedDigit() }
+            TableColumn("Size") { Text($0.displaySize).monospacedDigit() }
                 .width(min: 70, ideal: 80)
             TableColumn("Dimensions") { Text($0.dimensionsDescription ?? "—").foregroundStyle(.secondary).monospacedDigit() }
                 .width(min: 80, ideal: 100)
