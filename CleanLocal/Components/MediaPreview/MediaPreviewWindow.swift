@@ -52,7 +52,7 @@ struct MediaPreviewView: View {
             .frame(width: 300)
         }
         .navigationTitle(item.filename)
-        .navigationSubtitle(item.size.formattedBytes)
+        .navigationSubtitle(item.displaySize)
         .task(id: item.id) { await load() }
         .onDisappear { player?.pause() }
     }
@@ -144,7 +144,10 @@ struct MediaInspector: View {
 
                 section("Information") {
                     row("Kind", item.format?.displayName ?? item.kind.title)
-                    row("Size", "\(item.size.formattedBytes) (\(item.size.formatted()) bytes)")
+                    row("Size", item.hasKnownSize ? "\(item.displaySize) (\(item.size.formatted()) bytes)" : "Unknown (original is in iCloud)")
+                    if let reclaimable = item.reclaimableSize, item.isSharedOnDisk {
+                        row("Frees if deleted", "\(reclaimable.formattedBytes) — shares space with a clone")
+                    }
                     if let dimensions = item.dimensionsDescription { row("Dimensions", dimensions) }
                     if let duration = item.duration { row("Duration", duration.formattedDuration) }
                     if let captured = item.captureDate { row("Captured", captured.mediumDisplay) }

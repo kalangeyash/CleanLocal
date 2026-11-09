@@ -281,6 +281,9 @@ final class LibraryStore {
                 }
             }
 
+            if let fetched = photosResult {
+                photosResult = await resolveUnknownPhotoSizes(fetched)
+            }
             merge(result: result, photosItems: photosResult, includePhotos: includePhotos)
             let finished = Date.now
             for index in locations.indices where result.scannedLocationIDs.contains(locations[index].id) {
@@ -305,6 +308,28 @@ final class LibraryStore {
             ))
         } catch {
             presentedError = PresentableError(title: "Scan Failed", error: error)
+        }
+    }
+
+    /// Fills in sizes PhotoKit's metadata didn't provide, using the public streaming API.
+    private func resolveUnknownPhotoSizes(_ items: [MediaItem]) async -> [MediaItem] {
+        let unknown = items.filter { $0.size == 0 }
+        guard !unknown.isEmpty else { return items }
+        var progress = scanProgress ?? ScanProgress()
+        progress.phase = .photosLibrary
+        progress.currentPath = "Measuring \(unknown.count) items without size information"
+        scanState = .scanning(progress)
+        let photos = self.photos
+        let sizes = (try? await unknown.concurrentMap(maxConcurrency: 2) { item -> (MediaItem.ID, Int64?) in
+            guard let identifier = item.photosLocalIdentifier else { return (item.id, nil) }
+            return (item.id, await photos.measuredSize(forLocalIdentifier: identifier))
+        }) ?? []
+        let resolved = Dictionary(sizes.compactMap { id, size in size.map { (id, $0) } }, uniquingKeysWith: { first, _ in first })
+        return items.map { item in
+            guard let size = resolved[item.id] else { return item }
+            var updated = item
+            updated.size = size
+            return updated
         }
     }
 

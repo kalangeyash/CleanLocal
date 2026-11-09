@@ -17,7 +17,7 @@ struct MediaGridCell: View {
                     .font(.callout.weight(.medium))
                     .lineLimit(1)
                     .truncationMode(.middle)
-                Text("\(item.size.formattedBytes) · \(item.effectiveDate.shortDisplay)")
+                Text("\(item.displaySize) · \(item.effectiveDate.shortDisplay)")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -94,7 +94,7 @@ struct MediaGridCell: View {
     }
 
     private var accessibilityDescription: String {
-        var parts = [item.kind.title, item.filename, item.size.formattedBytes, item.effectiveDate.shortDisplay]
+        var parts = [item.kind.title, item.filename, item.displaySize, item.effectiveDate.shortDisplay]
         if let duration = item.duration { parts.append(duration.formattedDuration) }
         if item.isPhotosAsset { parts.append("Photos library") }
         return parts.joined(separator: ", ")

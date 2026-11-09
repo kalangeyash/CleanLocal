@@ -9,7 +9,7 @@ struct DeletionHistoryView: View {
     var body: some View {
         VStack(spacing: 0) {
             VStack(alignment: .leading, spacing: Spacing.m) {
-                PageHeader(title: "Trash & History", subtitle: subtitle) {
+                PageHeader(title: "Cleanup History", subtitle: subtitle) {
                     Button("Clear History…") { showsClearConfirmation = true }
                         .buttonStyle(.glass)
                         .disabled(deletion.history.isEmpty)
@@ -40,6 +40,8 @@ struct DeletionHistoryView: View {
                     .width(min: 130, ideal: 170)
                     TableColumn("Name", value: \.filename) { Text($0.filename).lineLimit(1).truncationMode(.middle) }
                         .width(min: 140, ideal: 220)
+                    TableColumn("Category") { Text($0.category ?? ($0.wasPhotosAsset ? "Photos" : "Media")).foregroundStyle(.secondary) }
+                        .width(min: 90, ideal: 140)
                     TableColumn("Original Location", value: \.originalLocation) { record in
                         Text(UserDirectories.abbreviate(path: (record.originalLocation as NSString).deletingLastPathComponent))
                             .foregroundStyle(.secondary).lineLimit(1).truncationMode(.head)
@@ -51,7 +53,7 @@ struct DeletionHistoryView: View {
                     TableColumn("Date", value: \.timestamp) { Text($0.timestamp.mediumDisplay).foregroundStyle(.secondary) }
                         .width(min: 120, ideal: 150)
                     TableColumn("Details") { record in
-                        Text(record.errorDescription ?? (record.wasPhotosAsset ? "Recoverable in Photos" : "Recoverable from Trash"))
+                        Text(record.errorDescription ?? detail(for: record))
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
                             .help(record.errorDescription ?? "")
@@ -84,17 +86,30 @@ struct DeletionHistoryView: View {
         return text
     }
 
+    private func detail(for record: DeletionRecord) -> String {
+        switch record.status {
+        case .removedFromPhotos: "Recoverable in Photos › Recently Deleted"
+        case .movedToTrash: "Recoverable from the Trash until it’s emptied"
+        case .deletedPermanently: record.itemCount.map { "\($0) files permanently removed" } ?? "Permanently removed"
+        case .partial: "Some files were in use and left in place"
+        case .failed: "Left untouched"
+        }
+    }
+
     private func symbol(for status: DeletionRecord.Status) -> String {
         switch status {
         case .movedToTrash: "trash.fill"
         case .removedFromPhotos: "photo.stack"
         case .failed: "exclamationmark.triangle.fill"
+        case .deletedPermanently: "xmark.bin.fill"
+        case .partial: "circle.lefthalf.filled"
         }
     }
 
     private func color(for status: DeletionRecord.Status) -> Color {
         switch status {
-        case .movedToTrash, .removedFromPhotos: Palette.grey
+        case .movedToTrash, .removedFromPhotos, .deletedPermanently: Palette.grey
+        case .partial: Palette.tangerine
         case .failed: Palette.flame
         }
     }

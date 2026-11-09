@@ -4,6 +4,7 @@ struct SidebarView: View {
     @Environment(NavigationModel.self) private var navigation
     @Environment(AnalysisStore.self) private var analysis
     @Environment(LibraryStore.self) private var library
+    @Environment(TrashStore.self) private var trash
 
     var body: some View {
         @Bindable var navigation = navigation
@@ -31,7 +32,7 @@ struct SidebarView: View {
     private func badge(for destination: SidebarDestination) -> Int {
         switch destination {
         case .duplicates: analysis.redundantCopyCount
-        case .similar: analysis.similarGroups.count
+        case .trashManager: trash.entries.count
         default: 0
         }
     }
@@ -45,7 +46,7 @@ struct BrandHeader: View {
             VStack(alignment: .leading, spacing: 1) {
                 Text(AppConstants.appName)
                     .font(.system(.headline, design: .rounded, weight: .bold))
-                Text("Your Media. Your Control.")
+                Text("Your Storage. Your Control.")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }

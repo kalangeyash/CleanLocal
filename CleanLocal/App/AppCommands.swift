@@ -22,9 +22,16 @@ struct AppCommands: Commands {
                 .disabled(!environment.library.isScanning)
             Button("Find Duplicates") {
                 environment.analysis.analyzeDuplicates()
+                environment.navigation.duplicateTab = .media
                 environment.navigation.destination = .duplicates
             }
             .keyboardShortcut("d", modifiers: [.command, .shift])
+            Button("Smart Cleanup Scan") {
+                environment.navigation.destination = .smartCleanup
+                environment.cleanup.scan()
+            }
+            .keyboardShortcut("k", modifiers: [.command, .shift])
+            .disabled(!environment.access.hasHomeAccess || environment.cleanup.isScanning)
         }
 
         CommandGroup(after: .pasteboard) {
@@ -52,8 +59,8 @@ struct AppCommands: Commands {
                     .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
             }
             Divider()
-            Button(SidebarDestination.photosLibrary.title) { environment.navigation.destination = .photosLibrary }
-            Button(SidebarDestination.recentlyScanned.title) { environment.navigation.destination = .recentlyScanned }
+            Button("Photos Library") { environment.navigation.showMedia(.photosLibrary) }
+            Button(SidebarDestination.maintenance.title) { environment.navigation.destination = .maintenance }
             Button(SidebarDestination.history.title) { environment.navigation.destination = .history }
         }
     }

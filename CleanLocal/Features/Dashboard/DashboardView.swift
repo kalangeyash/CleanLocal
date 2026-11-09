@@ -30,6 +30,7 @@ private struct DashboardContent: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.xl) {
                 DashboardHero()
+                CleanupSummaryCard()
                 statsGrid
                 ViewThatFits(in: .horizontal) {
                     HStack(alignment: .top, spacing: Spacing.l) {
@@ -41,6 +42,7 @@ private struct DashboardContent: View {
                         sideColumn
                     }
                 }
+                StorageBreakdownCard(compact: true)
                 quickActions
                 if !library.lastScanIssues.isEmpty {
                     InfoBanner(
@@ -71,21 +73,21 @@ private struct DashboardContent: View {
         return LazyVGrid(columns: statColumns, spacing: Spacing.l) {
             StatTile(title: "Total Media", value: breakdown.totalCount.formatted(),
                      caption: "\(library.locations.count) \(library.locations.count == 1 ? "folder" : "folders")\(library.includesPhotosLibrary ? " + Photos" : "")",
-                     symbol: "photo.on.rectangle.angled", tint: Palette.tangerine) { navigation.destination = .allMedia }
+                     symbol: "photo.on.rectangle.angled", tint: Palette.tangerine) { navigation.showMedia(.library) }
             StatTile(title: "Media Storage", value: breakdown.totalBytes.formattedBytes,
-                     caption: "Scanned media size", symbol: "internaldrive.fill", tint: Palette.blaze) { navigation.destination = .storage }
+                     caption: "Scanned media size", symbol: "internaldrive.fill", tint: Palette.blaze) { navigation.destination = .storageAnalyzer }
             StatTile(title: "Photos", value: breakdown.photoCount.formatted(),
-                     caption: "Including screenshots", symbol: "photo.fill", tint: MediaCategory.photos.tint) { navigation.destination = .allMedia }
+                     caption: "Including screenshots", symbol: "photo.fill", tint: MediaCategory.photos.tint) { navigation.showMedia(.library) }
             StatTile(title: "Videos", value: breakdown.videoCount.formatted(),
-                     caption: breakdown.entry(for: .videos).bytes.formattedBytes, symbol: "film.fill", tint: MediaCategory.videos.tint) { navigation.destination = .videos }
+                     caption: breakdown.entry(for: .videos).bytes.formattedBytes, symbol: "film.fill", tint: MediaCategory.videos.tint) { navigation.showMedia(.videos) }
             StatTile(title: "Duplicate Files", value: duplicatesAnalyzed ? analysis.redundantCopyCount.formatted() : "—",
                      caption: duplicatesAnalyzed ? "\(analysis.duplicateGroups.count) groups of identical files" : "Not analyzed yet",
-                     symbol: "square.on.square.fill", tint: Palette.blaze) { navigation.destination = .duplicates }
+                     symbol: "square.on.square.fill", tint: Palette.blaze) { navigation.duplicateTab = .media; navigation.destination = .duplicates }
             StatTile(title: "Large Files", value: large.count.formatted(),
                      caption: "Over \(settings.largeFileThresholdMB) MB · \(StorageAnalyticsService.totalSize(of: large).formattedBytes)",
-                     symbol: "externaldrive.fill", tint: Palette.destructive) { navigation.destination = .largeFiles }
+                     symbol: "externaldrive.fill", tint: Palette.destructive) { navigation.showMedia(.largeMedia) }
             StatTile(title: "Potential Savings", value: duplicatesAnalyzed ? analysis.reclaimableDuplicateBytes.formattedBytes : "—",
-                     caption: "By removing extra duplicate copies", symbol: "leaf.fill", tint: Palette.success) { navigation.destination = .duplicates }
+                     caption: "By removing extra duplicate copies", symbol: "leaf.fill", tint: Palette.success) { navigation.duplicateTab = .media; navigation.destination = .duplicates }
         }
     }
 
@@ -109,11 +111,12 @@ private struct DashboardContent: View {
                     StorageDonutChart(breakdown: library.breakdown, highlighted: $highlighted)
                         .frame(width: 210, height: 210)
                     CategoryLegend(breakdown: library.breakdown, highlighted: $highlighted) { category in
-                        navigation.destination = switch category {
+                        let tab: MediaTab = switch category {
                         case .videos: .videos
                         case .screenshots: .screenshots
-                        default: .allMedia
+                        default: .library
                         }
+                        navigation.showMedia(tab)
                     }
                 }
             }
@@ -126,7 +129,9 @@ private struct DashboardContent: View {
             if let volume {
                 VStack(alignment: .leading, spacing: Spacing.m) {
                     Text("Startup Disk").font(.cardTitle)
-                    CapacityBar(volume: volume, mediaBytes: library.breakdown.totalBytes)
+                    CapacityBar(volume: volume, mediaBytes: library.breakdown.totalBytes) {
+                        navigation.destination = .storageAnalyzer
+                    }
                 }
                 .card(padding: Spacing.xl)
             }
@@ -146,11 +151,11 @@ private struct DashboardContent: View {
                 QuickActionCard(title: "Review Duplicates", detail: analysis.duplicateGroups.isEmpty ? "Find byte-identical copies" : "\(analysis.reclaimableDuplicateBytes.formattedBytes) in extra copies",
                                 symbol: "square.on.square.fill", tint: Palette.warning) { navigation.destination = .duplicates }
                 QuickActionCard(title: "Similar Photos", detail: analysis.similarGroups.isEmpty ? "Bursts, edits and near-copies" : "\(analysis.similarGroups.count) groups to review",
-                                symbol: "rectangle.stack.fill", tint: Palette.blaze) { navigation.destination = .similar }
+                                symbol: "rectangle.stack.fill", tint: Palette.blaze) { navigation.showMedia(.similar) }
                 QuickActionCard(title: "Clean Up Screenshots", detail: "\(screenshots.count.formatted()) screenshots · \(screenshots.bytes.formattedBytes)",
-                                symbol: "camera.viewfinder", tint: MediaCategory.screenshots.tint) { navigation.destination = .screenshots }
+                                symbol: "camera.viewfinder", tint: MediaCategory.screenshots.tint) { navigation.showMedia(.screenshots) }
                 QuickActionCard(title: "Old Media", detail: "\(old.count.formatted()) items older than \(settings.oldMediaThreshold.title)",
-                                symbol: "clock.arrow.circlepath", tint: Palette.grey) { navigation.destination = .oldMedia }
+                                symbol: "clock.arrow.circlepath", tint: Palette.grey) { navigation.showMedia(.oldMedia) }
             }
         }
     }
@@ -377,5 +382,59 @@ struct LocationsSummaryCard: View {
             }
         }
         .card(padding: Spacing.xl)
+    }
+}
+
+
+/// Potential savings from the last Smart Cleanup scan, with the main call to action.
+struct CleanupSummaryCard: View {
+    @Environment(CleanupStore.self) private var cleanup
+    @Environment(AccessStore.self) private var access
+    @Environment(NavigationModel.self) private var navigation
+    @Environment(DeletionStore.self) private var deletion
+
+    var body: some View {
+        HStack(spacing: Spacing.xl) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(Palette.onBrand)
+                .frame(width: 52, height: 52)
+                .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Palette.brandGradient))
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(.title3.weight(.semibold))
+                Text(detail).font(.callout).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer()
+            if !access.hasHomeAccess {
+                Button("Grant Access…") { access.grantHomeAccess() }.buttonStyle(.primary)
+            } else if cleanup.isScanning {
+                ProgressView().controlSize(.small)
+            } else {
+                Button(cleanup.result == nil ? "Run Smart Cleanup" : "Review") {
+                    navigation.destination = .smartCleanup
+                    if cleanup.result == nil { cleanup.scan() }
+                }
+                .buttonStyle(.primary)
+            }
+        }
+        .card(padding: Spacing.xl)
+    }
+
+    private var title: String {
+        guard let result = cleanup.result else { return "Find caches, logs and developer junk" }
+        let safe = result.candidates.filter { $0.safety == .safe }.reduce(Int64(0)) { $0 + $1.size.logicalSize }
+        return "\(safe.formattedBytes) safe to clean"
+    }
+
+    private var detail: String {
+        guard let result = cleanup.result else {
+            return access.hasHomeAccess
+                ? "Smart Cleanup checks caches, logs, browsers, developer tools and leftovers — then lets you review everything."
+                : "Grant access to your Home folder so CleanLocal can look for system junk. Nothing is removed without your confirmation."
+        }
+        let review = result.candidates.filter { $0.safety == .review }.reduce(Int64(0)) { $0 + $1.size.logicalSize }
+        let developer = result.candidates.filter { CleanupCatalog.category(id: $0.categoryID)?.group == .developer }
+            .reduce(Int64(0)) { $0 + $1.size.logicalSize }
+        return "\(review.formattedBytes) more to review · developer caches \(developer.formattedBytes) · scanned \(result.scannedAt.relativeDisplay) · \(deletion.totalReclaimedBytes.formattedBytes) cleaned so far"
     }
 }

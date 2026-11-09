@@ -4,9 +4,11 @@ import SwiftUI
 struct ContentView: View {
     @Environment(LibraryStore.self) private var library
     @Environment(NavigationModel.self) private var navigation
+    @Environment(AccessStore.self) private var access
 
     var body: some View {
         @Bindable var library = library
+        @Bindable var access = access
         NavigationSplitView {
             SidebarView()
         } detail: {
@@ -15,6 +17,10 @@ struct ContentView: View {
         }
         .toolbar(removing: .title)
         .deletionSheetHost(context: .main)
+        .cleanupSheetHost()
+        .alert(item: $access.presentedError) { error in
+            Alert(title: Text(error.title), message: Text(error.message), dismissButton: .default(Text("OK")))
+        }
         .alert(item: $library.presentedError) { error in
             Alert(title: Text(error.title), message: Text(error.message), dismissButton: .default(Text("OK")))
         }
@@ -28,16 +34,16 @@ struct DetailRouter: View {
         Group {
             switch destination {
             case .overview: DashboardView()
-            case .allMedia: AllMediaView()
+            case .smartCleanup: SmartCleanupView()
+            case .systemJunk, .applicationCache, .temporaryFiles, .browserCleanup, .developerCleanup, .leftovers:
+                CleanupModuleView(destination: destination)
             case .largeFiles: LargeFilesView()
-            case .duplicates: DuplicatesView()
-            case .similar: SimilarPhotosView()
-            case .oldMedia: OldMediaView()
-            case .videos: VideosView()
-            case .screenshots: ScreenshotsView()
-            case .recentlyScanned: RecentlyScannedView()
-            case .photosLibrary: PhotosLibraryView()
-            case .storage: StorageAnalyticsView()
+            case .duplicates: DuplicateFinderView()
+            case .mediaCleaner: MediaCleanerView()
+            case .oldFiles: OldFilesView()
+            case .trashManager: TrashManagerView()
+            case .storageAnalyzer: StorageAnalyzerView()
+            case .maintenance: MaintenanceView()
             case .history: DeletionHistoryView()
             case .settings: SettingsView(embedded: true)
             }

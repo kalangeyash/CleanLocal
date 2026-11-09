@@ -4,7 +4,7 @@ import OSLog
 /// Centralized product constants.
 enum AppConstants {
     static let appName = "CleanLocal"
-    static let tagline = "Your Mac. Your Media. Your Control."
+    static let tagline = "Your Mac. Your Storage. Your Control."
     static let bundleIdentifier = Bundle.main.bundleIdentifier ?? "com.yourdomain.cleanlocal"
 
     static var version: String {
@@ -42,6 +42,11 @@ enum AppConstants {
         static let largeFileThresholdMB = "settings.largeFileThresholdMB"
         static let oldMediaThreshold = "settings.oldMediaThreshold"
         static let analyzeDuplicatesAfterScan = "settings.analyzeDuplicatesAfterScan"
+        static let deleteCachesImmediately = "settings.deleteCachesImmediately"
+        static let logAgeDays = "settings.logAgeDays"
+        static let crashReportAgeDays = "settings.crashReportAgeDays"
+        static let installerAgeDays = "settings.installerAgeDays"
+        static let allowICloudVerification = "settings.allowICloudVerification"
     }
 }
 

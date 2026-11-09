@@ -82,6 +82,34 @@ final class SettingsStore {
         didSet { defaults.set(analyzeDuplicatesAfterScan, forKey: Keys.analyzeDuplicatesAfterScan) }
     }
 
+    /// Delete verified, rebuildable caches immediately instead of moving them to the Trash.
+    /// Off by default: the Trash is always the default.
+    var deleteCachesImmediately: Bool {
+        didSet { defaults.set(deleteCachesImmediately, forKey: Keys.deleteCachesImmediately) }
+    }
+
+    var logAgeDays: Int {
+        didSet { defaults.set(logAgeDays, forKey: Keys.logAgeDays) }
+    }
+
+    var crashReportAgeDays: Int {
+        didSet { defaults.set(crashReportAgeDays, forKey: Keys.crashReportAgeDays) }
+    }
+
+    var installerAgeDays: Int {
+        didSet { defaults.set(installerAgeDays, forKey: Keys.installerAgeDays) }
+    }
+
+    /// Let Photos fetch iCloud-only originals so duplicates can be verified byte-for-byte.
+    var allowICloudVerification: Bool {
+        didSet { defaults.set(allowICloudVerification, forKey: Keys.allowICloudVerification) }
+    }
+
+    var cleanupThresholds: CleanupThresholds {
+        CleanupThresholds(logAgeDays: logAgeDays, crashReportAgeDays: crashReportAgeDays,
+                          installerAgeDays: installerAgeDays, incompleteDownloadAgeDays: 1)
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         appearance = AppAppearance(rawValue: defaults.string(forKey: Keys.appearance) ?? "") ?? .system
@@ -98,6 +126,11 @@ final class SettingsStore {
         largeFileThresholdMB = largeThreshold == 0 ? AppConstants.Defaults.largeFileThresholdMB : largeThreshold
         oldMediaThreshold = OldMediaThreshold(rawValue: defaults.string(forKey: Keys.oldMediaThreshold) ?? "") ?? .oneYear
         analyzeDuplicatesAfterScan = defaults.object(forKey: Keys.analyzeDuplicatesAfterScan) as? Bool ?? true
+        deleteCachesImmediately = defaults.bool(forKey: Keys.deleteCachesImmediately)
+        logAgeDays = (defaults.object(forKey: Keys.logAgeDays) as? Int) ?? 30
+        crashReportAgeDays = (defaults.object(forKey: Keys.crashReportAgeDays) as? Int) ?? 30
+        installerAgeDays = (defaults.object(forKey: Keys.installerAgeDays) as? Int) ?? 14
+        allowICloudVerification = defaults.bool(forKey: Keys.allowICloudVerification)
     }
 
     var largeFileThresholdBytes: Int64 { Int64(largeFileThresholdMB) * 1_000_000 }
@@ -129,5 +162,10 @@ final class SettingsStore {
         largeFileThresholdMB = AppConstants.Defaults.largeFileThresholdMB
         oldMediaThreshold = .oneYear
         analyzeDuplicatesAfterScan = true
+        deleteCachesImmediately = false
+        logAgeDays = 30
+        crashReportAgeDays = 30
+        installerAgeDays = 14
+        allowICloudVerification = false
     }
 }

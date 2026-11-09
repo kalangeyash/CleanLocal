@@ -3,7 +3,8 @@ import Foundation
 /// Hashing for Photos library assets, implemented with PhotoKit.
 protocol PhotosContentHashing: Sendable {
     /// SHA-256 of the asset's original resource, streamed (never fully in memory).
-    func contentHash(forLocalIdentifier identifier: String) async throws -> String
+    /// `allowNetwork` lets Photos fetch an iCloud-only original (user opt-in).
+    func contentHash(forLocalIdentifier identifier: String, allowNetwork: Bool) async throws -> String
     func perceptualHashes(forLocalIdentifier identifier: String) async -> PerceptualHasher.Hashes?
 }
 
@@ -13,6 +14,8 @@ struct DuplicateDetectionResult: Sendable {
     var computedHashes: [MediaItem.ID: String]
     /// Items that could not be read (e.g. iCloud-only originals, permission changes).
     var unreadableCount: Int
+    /// iCloud-only Photos assets matched by metadata and appearance (bytes not compared).
+    var probableGroups: [DuplicateGroup] = []
 }
 
 /// Finds byte-identical media in three stages:
@@ -27,6 +30,8 @@ struct DuplicateDetectionResult: Sendable {
 struct DuplicateDetectionService: Sendable {
     var maxConcurrency = AppConstants.Scanning.hashingConcurrency
     var photosHasher: (any PhotosContentHashing)?
+    /// Let Photos download iCloud-only originals to verify them (off unless the user opts in).
+    var allowPhotosNetwork = false
 
     func findExactDuplicates(
         in items: [MediaItem],
@@ -67,13 +72,14 @@ struct DuplicateDetectionService: Sendable {
         let total = max(1, fullHashCandidates.count)
         let counter = ProgressCounter()
         let photosHasher = self.photosHasher
+        let allowNetwork = allowPhotosNetwork
         let hashed = try await fullHashCandidates.concurrentMap(maxConcurrency: maxConcurrency) { item -> (MediaItem, String?, Bool) in
             defer { progress(Double(counter.increment()) / Double(total)) }
             if let cached = item.contentHash { return (item, cached, false) }
             do {
                 if item.isPhotosAsset {
                     guard let identifier = item.photosLocalIdentifier, let photosHasher else { return (item, nil, false) }
-                    return (item, try await photosHasher.contentHash(forLocalIdentifier: identifier), true)
+                    return (item, try await photosHasher.contentHash(forLocalIdentifier: identifier, allowNetwork: allowNetwork), true)
                 }
                 guard let url = item.url else { return (item, nil, false) }
                 return (item, try FileHasher.sha256(of: url), true)
@@ -87,8 +93,13 @@ struct DuplicateDetectionService: Sendable {
         var computed: [MediaItem.ID: String] = [:]
         var byHash: [String: [MediaItem]] = [:]
         var unreadable = 0
+        var unreadablePhotos: [MediaItem] = []
         for (item, hash, isNew) in hashed {
-            guard let hash else { unreadable += 1; continue }
+            guard let hash else {
+                unreadable += 1
+                if item.isPhotosAsset { unreadablePhotos.append(item) }
+                continue
+            }
             if isNew { computed[item.id] = hash }
             var updated = item
             updated.contentHash = hash
@@ -109,8 +120,58 @@ struct DuplicateDetectionService: Sendable {
             }
             .sorted { $0.reclaimableBytes > $1.reclaimableBytes }
 
+        // Photos assets we couldn't read (iCloud-only) or size (unknown) get a metadata match.
+        let probableInput = unreadablePhotos + items.filter { $0.isPhotosAsset && $0.size == 0 }
+        let probable = try await probableDuplicates(among: probableInput)
+
         progress(1)
-        return DuplicateDetectionResult(groups: groups, computedHashes: computed, unreadableCount: unreadable)
+        return DuplicateDetectionResult(groups: groups, computedHashes: computed, unreadableCount: unreadable, probableGroups: probable)
+    }
+
+    /// Groups Photos assets with identical dimensions, capture time and duration whose
+    /// local thumbnails are visually indistinguishable. Used only when bytes can't be read.
+    func probableDuplicates(among items: [MediaItem]) async throws -> [DuplicateGroup] {
+        let keyed = Dictionary(grouping: items.filter { $0.creationDate != nil }) { item -> String in
+            let created = Int(item.creationDate?.timeIntervalSince1970 ?? 0)
+            let duration = item.duration.map { Int(($0 * 2).rounded()) } ?? -1
+            return "\(item.kind.rawValue)|\(item.pixelWidth ?? 0)x\(item.pixelHeight ?? 0)|\(created)|\(duration)"
+        }
+        var groups: [DuplicateGroup] = []
+        for members in keyed.values where members.count > 1 {
+            try Task.checkCancellation()
+            var hashes: [MediaItem.ID: UInt64] = [:]
+            if let photosHasher {
+                for member in members {
+                    if let identifier = member.photosLocalIdentifier,
+                       let value = await photosHasher.perceptualHashes(forLocalIdentifier: identifier) {
+                        hashes[member.id] = value.perceptual
+                    }
+                }
+            }
+            // Require matching appearance when fingerprints are available.
+            var clusters: [[MediaItem]] = []
+            for member in members {
+                if let index = clusters.firstIndex(where: { cluster in
+                    guard let a = hashes[cluster[0].id], let b = hashes[member.id] else { return hashes.isEmpty }
+                    return PerceptualHasher.distance(a, b) <= 3
+                }) {
+                    clusters[index].append(member)
+                } else {
+                    clusters.append([member])
+                }
+            }
+            for cluster in clusters where cluster.count > 1 {
+                let keeper = DuplicateSelectionPolicy.suggestedKeeper(forExactDuplicates: cluster)
+                groups.append(DuplicateGroup(
+                    id: "probable-" + cluster.map(\.id).sorted().joined(separator: "|"),
+                    kind: .probable,
+                    items: DuplicateSelectionPolicy.orderedForDisplay(cluster, keeperID: keeper),
+                    suggestedKeeperID: keeper,
+                    similarity: 0.99
+                ))
+            }
+        }
+        return groups
     }
 
     /// Splits a same-size group by pixel dimensions, but only when every member is a regular

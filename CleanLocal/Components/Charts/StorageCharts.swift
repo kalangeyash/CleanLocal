@@ -106,6 +106,8 @@ struct CapacityBar: View {
     let volume: VolumeCapacity
     let mediaBytes: Int64
     var compact = false
+    /// When set, "Other data" becomes a button that explains what it contains.
+    var onShowOther: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: compact ? Spacing.xs : Spacing.s) {
@@ -137,7 +139,18 @@ struct CapacityBar: View {
             if !compact {
                 HStack(spacing: Spacing.l) {
                     legendDot(Palette.brandGradient, "Scanned media", mediaBytes)
-                    legendDot(Palette.grey, "Other data", max(volume.usedBytes - mediaBytes, 0))
+                    if let onShowOther {
+                        Button(action: onShowOther) {
+                            HStack(spacing: 4) {
+                                legendDot(Palette.grey, "Other data", max(volume.usedBytes - mediaBytes, 0))
+                                Image(systemName: "chevron.right.circle.fill").foregroundStyle(Palette.accent)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .help("See what’s in Other data")
+                    } else {
+                        legendDot(Palette.grey, "Other data", max(volume.usedBytes - mediaBytes, 0))
+                    }
                     legendDot(Palette.strongFill, "Available", volume.availableBytes)
                 }
                 .font(.caption)

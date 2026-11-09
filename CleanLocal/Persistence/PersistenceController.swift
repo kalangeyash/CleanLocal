@@ -8,6 +8,7 @@ struct PersistenceController: Sendable {
     let mediaIndex: JSONFileStore<[MediaItem]>
     let scanHistory: JSONFileStore<[ScanSession]>
     let deletionHistory: JSONFileStore<[DeletionRecord]>
+    let accessGrants: JSONFileStore<AccessGrants>
 
     init(baseURL: URL) {
         self.baseURL = baseURL
@@ -15,6 +16,7 @@ struct PersistenceController: Sendable {
         mediaIndex = JSONFileStore(fileURL: baseURL.appendingPathComponent("media-index.json"), defaultValue: [])
         scanHistory = JSONFileStore(fileURL: baseURL.appendingPathComponent("scan-history.json"), defaultValue: [])
         deletionHistory = JSONFileStore(fileURL: baseURL.appendingPathComponent("deletion-history.json"), defaultValue: [])
+        accessGrants = JSONFileStore(fileURL: baseURL.appendingPathComponent("access-grants.json"), defaultValue: AccessGrants())
     }
 
     static func live() -> PersistenceController {

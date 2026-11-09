@@ -131,7 +131,7 @@ private struct DeletionConfirmationView: View {
                                 .truncationMode(.head)
                         }
                         Spacer()
-                        Text(item.size.formattedBytes)
+                        Text(item.displaySize)
                             .font(.callout.monospacedDigit())
                             .foregroundStyle(.secondary)
                     }
@@ -150,6 +150,12 @@ private struct DeletionConfirmationView: View {
 private struct DeletionResultView: View {
     let report: DeletionReport
     @Environment(DeletionStore.self) private var deletion
+    @Environment(TrashStore.self) private var trash
+    @Environment(AccessStore.self) private var access
+    @State private var freeResult: FreeSpaceResult?
+    @State private var isFreeing = false
+
+    private var trashedPaths: [String] { report.successes.compactMap(\.trashedPath) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.l) {
@@ -166,6 +172,36 @@ private struct DeletionResultView: View {
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+            }
+
+            if let freeResult {
+                InfoBanner(style: freeResult.failures.isEmpty ? .success : .warning,
+                           title: "Freed \(freeResult.freedBytes.formattedBytes) on disk",
+                           message: freeResult.needsTrashAccess
+                               ? "macOS didn’t let CleanLocal empty these items. Grant Trash access, or empty the Trash in Finder."
+                               : (freeResult.failures.isEmpty ? "The items were permanently removed from the Trash." : freeResult.failures.prefix(2).joined(separator: "\n")))
+                if freeResult.needsTrashAccess {
+                    Button("Grant Trash Access…") { access.grantTrashAccess() }.buttonStyle(.glass)
+                }
+            } else if !trashedPaths.isEmpty {
+                HStack(spacing: Spacing.m) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Free the space now?").font(.callout.weight(.semibold))
+                        Text("Permanently removes just these items from the Trash. This can’t be undone.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Button(isFreeing ? "Freeing…" : "Free Space Now") {
+                        isFreeing = true
+                        Task {
+                            freeResult = await trash.deleteTrashedItems(trashedPaths)
+                            isFreeing = false
+                        }
+                    }
+                    .buttonStyle(.destructive)
+                    .disabled(isFreeing)
+                }
+                .card(padding: Spacing.m)
             }
 
             if !report.failures.isEmpty {

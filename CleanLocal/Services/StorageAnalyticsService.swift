@@ -68,8 +68,10 @@ struct StorageAnalyticsService: Sendable {
         var counted = Set<MediaItem.ID>()
         var total: Int64 = 0
         for group in groups {
+            let keeperClone = group.keeper?.cloneID
             for item in group.items where item.id != group.suggestedKeeperID && counted.insert(item.id).inserted {
-                total += item.size
+                if let clone = item.cloneID, clone == keeperClone { continue }
+                total += item.effectiveReclaimableSize
             }
         }
         return total

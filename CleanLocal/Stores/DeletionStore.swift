@@ -89,6 +89,19 @@ final class DeletionStore {
         history.filter { $0.status.succeeded }.reduce(0) { $0 + $1.size }
     }
 
+    /// Adds records produced by other cleanup flows (system cleanup, Trash emptying).
+    func record(_ records: [DeletionRecord]) {
+        guard !records.isEmpty else { return }
+        history.insert(contentsOf: records, at: 0)
+        persistHistory()
+    }
+
+    /// Paths CleanLocal moved to the Trash in the current session's report.
+    var lastTrashedPaths: [String] {
+        guard case let .finished(report)? = session?.phase else { return [] }
+        return report.records.compactMap(\.trashedPath)
+    }
+
     func clearHistory() {
         history = []
         Task { try? await persistence.deletionHistory.reset() }

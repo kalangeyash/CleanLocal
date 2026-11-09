@@ -43,6 +43,28 @@ Even inside a folder you've granted, CleanLocal skips:
 
 CleanLocal refuses to add a protected location as a scan location in the first place.
 
+## Cleanup access (Home folder and Trash)
+
+The cleanup modules, Storage Analyzer, Large Files, Old Files and file duplicates need access the sandbox doesn't give by default. A real-app audit on macOS 27 confirmed that, without a grant, CleanLocal can't read `~/Library/Caches`, `~/Library/Logs`, `~/.npm`, `~/Library/Developer`, `~/Downloads` or the Trash. Only `/Applications` is readable.
+
+| Grant | How | Enables |
+| --- | --- | --- |
+| **Home folder** | *Choose Home Folder…* opens a panel; you select your home folder | Caches, logs, developer caches, Downloads, leftovers, Storage Analyzer |
+| **Trash** | *Choose Trash Folder…* opens a panel showing hidden files; you select `.Trash` | Trash Manager, "Free Space Now" |
+| **Developer folders** | *Settings › Access › Add Developer Folders…* | `node_modules`, build outputs and virtualenvs in those folders only |
+
+Grants are stored as security-scoped bookmarks and can be revoked in *Settings › Access*. Even with the Home folder granted, macOS may still:
+
+- show its own prompt before an app reads **Downloads**, or **other apps' data** in `~/Library/Containers` (scanning leftovers of uninstalled sandboxed apps);
+- deny **Safari** caches, **Mail** and other privacy-protected stores.
+
+CleanLocal never probes those locations at launch. They're read only during a scan you start. Anything denied is listed as "couldn't be read" and skipped. CleanLocal doesn't request Full Disk Access, administrator rights or a privileged helper, and has no way to bypass these protections.
+
+## Running apps and system information
+
+- CleanLocal reads the list of running apps (`NSWorkspace.runningApplications`) to skip caches of apps that are open. No permission is needed.
+- Maintenance reads public, read-only facts: `sysctl` (model, chip), IOKit power sources and the `AppleSmartBattery` registry entry (charge, condition, cycles), DiskArbitration (startup disk description) and LaunchAgents folders it can read. It changes nothing.
+
 ## Photos library
 
 - CleanLocal requests **read/write** authorization (`PHPhotoLibrary.requestAuthorization(for: .readWrite)`). Write access is needed only to move items to Recently Deleted when you ask.

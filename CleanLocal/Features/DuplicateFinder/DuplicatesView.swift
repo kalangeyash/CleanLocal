@@ -105,6 +105,13 @@ struct DuplicatesView: View {
                     ForEach(analysis.duplicateGroups) { group in
                         DuplicateGroupCard(group: group, selection: $selection)
                     }
+                    if !analysis.probableGroups.isEmpty {
+                        InfoBanner(style: .info, title: "Probable duplicates in iCloud",
+                                   message: "These originals are stored only in iCloud, so their bytes weren’t compared. They match on dimensions, capture time, duration and appearance. Review carefully — nothing here is selected for you. To verify byte-for-byte, turn on iCloud verification in Settings › Cleanup.")
+                        ForEach(analysis.probableGroups) { group in
+                            DuplicateGroupCard(group: group, selection: $selection)
+                        }
+                    }
                 }
                 .padding(Spacing.xxl)
                 .padding(.bottom, 72)
@@ -114,7 +121,8 @@ struct DuplicatesView: View {
 
     private var selectedItems: [MediaItem] {
         var seen = Set<MediaItem.ID>()
-        return analysis.duplicateGroups.flatMap(\.items).filter { selection.contains($0.id) && seen.insert($0.id).inserted }
+        return (analysis.duplicateGroups + analysis.probableGroups).flatMap(\.items)
+            .filter { selection.contains($0.id) && seen.insert($0.id).inserted }
     }
 }
 
@@ -128,11 +136,19 @@ struct DuplicateGroupCard: View {
         VStack(alignment: .leading, spacing: Spacing.m) {
             HStack(alignment: .firstTextBaseline) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("\(group.items.count) identical copies")
+                    Text(group.kind == .probable ? "\(group.items.count) probable copies" : "\(group.items.count) identical copies")
                         .font(.cardTitle)
                     Text("\(group.items.first?.size.formattedBytes ?? "") each · \(group.reclaimableBytes.formattedBytes) reclaimable")
                         .font(.callout)
                         .foregroundStyle(.secondary)
+                }
+                if group.involvesClones {
+                    Badge(text: "APFS clones", symbol: "square.on.square.dashed", tint: Palette.khaki)
+                        .help("These copies share disk space, so removing them frees only what’s shown as reclaimable.")
+                }
+                if group.kind == .probable {
+                    Badge(text: "Probable", symbol: "icloud", tint: Palette.tangerine)
+                        .help("Originals are in iCloud, so bytes weren’t compared. Matched by dimensions, capture time, duration and appearance.")
                 }
                 Spacer()
                 if allSelected {
@@ -214,7 +230,7 @@ private struct DuplicateRow: View {
                 .foregroundStyle(.tertiary)
             }
             Spacer()
-            Text(item.size.formattedBytes).font(.callout.monospacedDigit()).foregroundStyle(.secondary)
+            Text(item.displaySize).font(.callout.monospacedDigit()).foregroundStyle(.secondary)
             HStack(spacing: Spacing.xxs) {
                 Button("Quick Look", systemImage: "eye", action: preview)
                 if !item.isPhotosAsset {

@@ -44,5 +44,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         // Balance every security-scoped access grant before exiting.
         environment?.library.shutdown()
+        environment?.access.shutdown()
     }
 }

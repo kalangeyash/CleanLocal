@@ -71,6 +71,11 @@ actor MediaScannerService {
             if var previous, previous.hasSameContentSignature(size: file.size, modificationDate: file.modificationDate) {
                 previous.source = .fileSystem(locationID: file.locationID)
                 previous.lastScannedAt = now
+                // Clone relationships can change without content changing; refresh cheaply.
+                if let space = FileSpaceInspector.inspect(url: file.url) {
+                    previous.reclaimableSize = space.reclaimableSize
+                    previous.cloneID = space.cloneID
+                }
                 reused.append(previous)
             } else {
                 needsMetadata.append((file, previous))
@@ -215,7 +220,7 @@ actor MediaScannerService {
     ) -> MediaItem {
         let filename = file.url.lastPathComponent
         let directory = file.url.deletingLastPathComponent().path
-        return MediaItem(
+        var item = MediaItem(
             id: MediaItem.fileID(forPath: file.path),
             source: .fileSystem(locationID: file.locationID),
             path: file.path,
@@ -241,6 +246,12 @@ actor MediaScannerService {
             perceptualHash: nil,
             differenceHash: nil
         )
+        // Real space accounting: clones and hard links free less than their size.
+        if let space = FileSpaceInspector.inspect(url: file.url) {
+            item.reclaimableSize = space.reclaimableSize
+            item.cloneID = space.cloneID
+        }
+        return item
     }
 }
 
