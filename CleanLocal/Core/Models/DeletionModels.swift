@@ -9,12 +9,19 @@ struct DeletionRecord: Identifiable, Codable, Hashable, Sendable {
         case removedFromPhotos
         /// The operation failed; the file was left untouched.
         case failed
+        /// Removed immediately (only for rebuildable caches the user opted to delete directly,
+        /// or items permanently removed from the Trash).
+        case deletedPermanently
+        /// Some files were removed; others were skipped (in use, locked, changed).
+        case partial
 
         var title: String {
             switch self {
             case .movedToTrash: "Moved to Trash"
             case .removedFromPhotos: "Moved to Recently Deleted"
             case .failed: "Failed"
+            case .deletedPermanently: "Deleted"
+            case .partial: "Partially cleaned"
             }
         }
 
@@ -35,6 +42,10 @@ struct DeletionRecord: Identifiable, Codable, Hashable, Sendable {
     /// Where the item landed inside the Trash, when the system reports it.
     let trashedPath: String?
     let wasPhotosAsset: Bool
+    /// Cleanup category, for non-media cleanup.
+    var category: String?
+    /// Files removed, for folder cleanups.
+    var itemCount: Int?
 }
 
 /// The outcome of one confirmed deletion request.
