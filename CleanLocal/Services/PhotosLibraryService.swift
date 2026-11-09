@@ -214,13 +214,14 @@ final class PhotosLibraryService: PhotosImageProviding, PhotosContentHashing, Ph
 
     // MARK: - Hashing
 
-    func contentHash(forLocalIdentifier identifier: String) async throws -> String {
+    func contentHash(forLocalIdentifier identifier: String, allowNetwork: Bool = false) async throws -> String {
         guard let asset = asset(for: identifier),
               let resource = Self.originalResource(in: PHAssetResource.assetResources(for: asset)) else {
             throw CleanLocalError.photosAssetUnavailable(identifier: identifier)
         }
         let options = PHAssetResourceRequestOptions()
-        options.isNetworkAccessAllowed = false
+        // Photos (not CleanLocal) performs any iCloud download, and only with the user's opt-in.
+        options.isNetworkAccessAllowed = allowNetwork
         let accumulator = StreamingSHA256()
         let manager = PHAssetResourceManager.default()
         let requestID = RequestIDBox()
@@ -240,6 +241,28 @@ final class PhotosLibraryService: PhotosImageProviding, PhotosContentHashing, Ph
             if let id = requestID.value { manager.cancelDataRequest(id) }
         }
         return accumulator.finalize()
+    }
+
+    /// Measures an asset's size with public PhotoKit APIs by streaming its resources and
+    /// counting bytes (nothing is stored). Returns `nil` when an original isn't available
+    /// locally. Used only when the fast metadata path can't report a size.
+    func measuredSize(forLocalIdentifier identifier: String) async -> Int64? {
+        guard let asset = asset(for: identifier) else { return nil }
+        let manager = PHAssetResourceManager.default()
+        let options = PHAssetResourceRequestOptions()
+        options.isNetworkAccessAllowed = false
+        var total: Int64 = 0
+        for resource in PHAssetResource.assetResources(for: asset) {
+            let counter = ByteCounter()
+            let ok: Bool = await withCheckedContinuation { continuation in
+                manager.requestData(for: resource, options: options,
+                                    dataReceivedHandler: { counter.add($0.count) },
+                                    completionHandler: { continuation.resume(returning: $0 == nil) })
+            }
+            guard ok else { return nil }
+            total += counter.value
+        }
+        return total > 0 ? total : nil
     }
 
     func perceptualHashes(forLocalIdentifier identifier: String) async -> PerceptualHasher.Hashes? {
@@ -290,6 +313,13 @@ private final class StreamingSHA256: @unchecked Sendable {
 /// Carries a value Apple documents as thread-safe but that isn't annotated `Sendable`.
 struct UncheckedSendableBox<Value>: @unchecked Sendable {
     let value: Value
+}
+
+private final class ByteCounter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var total: Int64 = 0
+    func add(_ count: Int) { lock.withLock { total += Int64(count) } }
+    var value: Int64 { lock.withLock { total } }
 }
 
 private final class RequestIDBox: @unchecked Sendable {

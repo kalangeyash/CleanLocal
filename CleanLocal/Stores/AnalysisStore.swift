@@ -19,6 +19,8 @@ enum AnalysisPhase: Equatable {
 final class AnalysisStore {
     private(set) var duplicateGroups: [DuplicateGroup] = []
     private(set) var similarGroups: [DuplicateGroup] = []
+    /// iCloud-only Photos copies matched without comparing bytes. Never counted as savings.
+    private(set) var probableGroups: [DuplicateGroup] = []
     private(set) var duplicatePhase: AnalysisPhase = .notStarted
     private(set) var similarPhase: AnalysisPhase = .notStarted
     private(set) var unreadableDuplicateCandidates = 0
@@ -47,7 +49,8 @@ final class AnalysisStore {
     func analyzeDuplicates() -> Task<Void, Never>? {
         duplicateTask?.cancel()
         let items = library.items
-        let service = duplicateService
+        var service = duplicateService
+        service.allowPhotosNetwork = settings.allowICloudVerification
         duplicatePhase = .running(progress: 0, message: "Comparing \(items.count.formatted()) files…")
         duplicateTask = Task { [weak self] in
             do {
@@ -60,6 +63,7 @@ final class AnalysisStore {
                 guard let self, !Task.isCancelled else { return }
                 library.applyContentHashes(result.computedHashes)
                 setDuplicateGroups(result.groups)
+                probableGroups = result.probableGroups
                 unreadableDuplicateCandidates = result.unreadableCount
                 duplicatePhase = .completed(.now)
             } catch is CancellationError {
@@ -139,6 +143,7 @@ final class AnalysisStore {
     func itemsWereRemoved(_ ids: Set<MediaItem.ID>) {
         setDuplicateGroups(Self.prune(duplicateGroups, removing: ids, keeperRule: DuplicateSelectionPolicy.suggestedKeeper(forExactDuplicates:)))
         similarGroups = Self.prune(similarGroups, removing: ids, keeperRule: DuplicateSelectionPolicy.suggestedKeeper(forSimilar:))
+        probableGroups = Self.prune(probableGroups, removing: ids, keeperRule: DuplicateSelectionPolicy.suggestedKeeper(forExactDuplicates:))
     }
 
     func reset() {
@@ -146,6 +151,7 @@ final class AnalysisStore {
         similarTask?.cancel()
         setDuplicateGroups([])
         similarGroups = []
+        probableGroups = []
         duplicatePhase = .notStarted
         similarPhase = .notStarted
     }

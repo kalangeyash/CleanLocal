@@ -44,6 +44,11 @@ struct MediaItem: Identifiable, Hashable, Codable, Sendable {
     var perceptualHash: UInt64?
     /// Cached 64-bit difference hash used as a secondary similarity check.
     var differenceHash: UInt64?
+    /// What deleting this file actually frees: its APFS private size, or 0 when it's hard-linked.
+    /// `nil` when unknown (Photos assets, other filesystems).
+    var reclaimableSize: Int64? = nil
+    /// APFS clone identifier; files cloned from one another share it.
+    var cloneID: UInt64? = nil
 }
 
 extension MediaItem {
@@ -53,6 +58,21 @@ extension MediaItem {
     var url: URL? { path.map { URL(fileURLWithPath: $0) } }
 
     var isPhotosAsset: Bool { source == .photosLibrary }
+
+    /// Space freed by removing this item, falling back to the logical size.
+    var effectiveReclaimableSize: Int64 { reclaimableSize ?? size }
+
+    /// PhotoKit can't always report an asset's size (for example, iCloud-only originals).
+    var hasKnownSize: Bool { size > 0 || !isPhotosAsset }
+
+    /// Size for display: "Unknown size" rather than a misleading "0 KB".
+    var displaySize: String { hasKnownSize ? size.formattedBytes : "Unknown size" }
+
+    /// The item shares disk blocks with a clone, so deleting it frees less than its size.
+    var isSharedOnDisk: Bool {
+        guard let reclaimableSize else { return false }
+        return reclaimableSize < size / 2
+    }
 
     var locationID: UUID? {
         if case let .fileSystem(locationID) = source { return locationID }
