@@ -82,7 +82,7 @@ CleanLocal never probes those locations at launch. They're read only during a sc
 ## Resetting permissions during development
 
 ```bash
-tccutil reset Photos com.yourdomain.cleanlocal   # forget the Photos decision
+tccutil reset Photos com.kalangeyash.cleanlocal   # forget the Photos decision
 ```
 
-To forget all folder grants, remove the locations in *Settings › Locations*. To reset everything, delete `~/Library/Containers/com.yourdomain.cleanlocal`.
+To forget all folder grants, remove the locations in *Settings › Locations*. To reset everything, delete `~/Library/Containers/com.kalangeyash.cleanlocal`.

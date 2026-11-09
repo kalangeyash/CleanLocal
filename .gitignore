@@ -24,3 +24,6 @@ xcuserdata/
 # Local tooling
 .claude/
 *.log
+
+# Release artifacts
+dist/

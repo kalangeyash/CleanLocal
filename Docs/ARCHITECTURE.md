@@ -83,7 +83,7 @@ Cancellation is cooperative throughout: `Task.isCancelled` is checked between di
 
 ## Persistence
 
-`PersistenceController` owns four versioned JSON documents in `~/Library/Containers/com.yourdomain.cleanlocal/Data/Library/Application Support/CleanLocal/`:
+`PersistenceController` owns versioned JSON documents in `~/Library/Containers/com.kalangeyash.cleanlocal/Data/Library/Application Support/CleanLocal/`:
 
 | File | Contents |
 | --- | --- |
